@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ATR_dailybot</title>
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script><style>body{font-family:sans-serif;background:#0d1117;color:#e6edf3;margin:0;display:flex}.sidebar{width:260px;background:#161b22;height:100vh;padding:20px}.nav-item{display:block;padding:10px;margin:5px 0;color:#8b949e;text-decoration:none;border-radius:8px;cursor:pointer}.nav-item:hover,.nav-item.active{background:#21262d;color:#58a6ff}.main{flex:1;padding:20px}.stat-card{background:#161b22;padding:20px;border-radius:12px;margin:10px 0}.stat-value{font-size:28px;font-weight:800}.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}.toast{position:fixed;bottom:20px;right:20px;background:#161b22;padding:15px;border-radius:8px;border:1px solid #3fb950;display:none}</style></head>
+<body><div class="sidebar"><h2>ATR_dailybot</h2><div class="nav-item active">📊 Dashboard</div><div style="margin-top:auto;padding:20px;border-top:1px solid #30363d"><span class="status-dot" id="wsDot" style="background:#f85149"></span> <span id="wsText">Connecting...</span></div></div>
+<div class="main"><h1>Live Dashboard</h1><div class="stat-card"><div class="stat-value" id="statMsgs">0</div><div>Messages Today</div></div><div class="stat-card"><h3>Live Feed</h3><div id="feed" style="font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto"></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const BACKEND_URL = 'acb63847-83c3-4379-89bf-69364907ec00'; 
+const socket = io(BACKEND_URL, { transports: ['websocket', 'polling'], reconnection: true });
+socket.on('connect', () => { document.getElementById('wsDot').style.background='#3fb950'; document.getElementById('wsText').textContent='🟢 Live Connected'; addLog('✅ Connected to backend'); });
+socket.on('disconnect', () => { document.getElementById('wsDot').style.background='#f85149'; document.getElementById('wsText').textContent='🔴 Disconnected'; });
+socket.on('message:received', (d) => { addLog('📨 @' + d.username + ': ' + d.text); incrementStat('statMsgs'); });
+socket.on('command:executed', (d) => { addLog('⌨️ /' + d.command + ' by @' + d.user); });
+function addLog(m) { const f=document.getElementById('feed'); f.innerHTML='<div>['+new Date().toLocaleTimeString()+'] '+m+'</div>'+f.innerHTML; }
+function incrementStat(id) { const e=document.getElementById(id); e.textContent=parseInt(e.textContent)+1; }
+addLog('System initialized. Waiting for Telegram events...');
+</script></body></html>
