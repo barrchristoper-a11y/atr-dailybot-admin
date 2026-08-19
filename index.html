@@ -4,7 +4,7 @@
 <div class="main"><h1>Live Dashboard</h1><div class="stat-card"><div class="stat-value" id="statMsgs">0</div><div>Messages Today</div></div><div class="stat-card"><h3>Live Feed</h3><div id="feed" style="font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto"></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
-const BACKEND_URL = 'cloudflared.exe service install eyJhIjoiMjM5ZjdmODM4OGU3MTA1MDE1NjE3YTE4MWM0NDVmNjQiLCJ0IjoiYWNiNjM4NDctODNjMy00Mzc5LTg5YmYtNjkzNjQ5MDdlYzAwIiwicyI6IlpqRTVNekU1T1dFdE1qazNOeTAwTVdWbUxXSTJNMlF0TlRrMFlqRmlZemswTkRKbSJ9'; 
+const BACKEND_URL = 'https://management-seats-based-states.trycloudflare.com';
 const socket = io(BACKEND_URL, { transports: ['websocket', 'polling'], reconnection: true });
 socket.on('connect', () => { document.getElementById('wsDot').style.background='#3fb950'; document.getElementById('wsText').textContent='🟢 Live Connected'; addLog('✅ Connected to backend'); });
 socket.on('disconnect', () => { document.getElementById('wsDot').style.background='#f85149'; document.getElementById('wsText').textContent='🔴 Disconnected'; });
