@@ -1,16 +1,350 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ATR_dailybot</title>
-<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script><style>body{font-family:sans-serif;background:#0d1117;color:#e6edf3;margin:0;display:flex}.sidebar{width:260px;background:#161b22;height:100vh;padding:20px}.nav-item{display:block;padding:10px;margin:5px 0;color:#8b949e;text-decoration:none;border-radius:8px;cursor:pointer}.nav-item:hover,.nav-item.active{background:#21262d;color:#58a6ff}.main{flex:1;padding:20px}.stat-card{background:#161b22;padding:20px;border-radius:12px;margin:10px 0}.stat-value{font-size:28px;font-weight:800}.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}.toast{position:fixed;bottom:20px;right:20px;background:#161b22;padding:15px;border-radius:8px;border:1px solid #3fb950;display:none}</style></head>
-<body><div class="sidebar"><h2>ATR_dailybot</h2><div class="nav-item active">📊 Dashboard</div><div style="margin-top:auto;padding:20px;border-top:1px solid #30363d"><span class="status-dot" id="wsDot" style="background:#f85149"></span> <span id="wsText">Connecting...</span></div></div>
-<div class="main"><h1>Live Dashboard</h1><div class="stat-card"><div class="stat-value" id="statMsgs">0</div><div>Messages Today</div></div><div class="stat-card"><h3>Live Feed</h3><div id="feed" style="font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto"></div></div></div>
-<div class="toast" id="toast"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATR_dailybot · Admin Control Panel</title>
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-inter@5.0.0/index.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg-primary:#0d1117;
+    --bg-secondary:#161b22;
+    --bg-tertiary:#21262d;
+    --border:#30363d;
+    --text-primary:#e6edf3;
+    --text-secondary:#8b949e;
+    --accent:#58a6ff;
+    --green:#3fb950;
+    --red:#f85149;
+    --orange:#d29922;
+    --purple:#bc8cff;
+  }
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;display:flex}
+  
+  /* Sidebar */
+  .sidebar{width:280px;background:var(--bg-secondary);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+  .sidebar-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .bot-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff}
+  .bot-info .bot-name{font-size:16px;font-weight:700}
+  .bot-info .bot-id{font-size:12px;color:var(--text-secondary)}
+  
+  .sidebar-nav{flex:1;padding:16px 0;overflow-y:auto}
+  .nav-section{padding:8px 16px;font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-top:8px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 16px;margin:4px 8px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text-secondary);transition:all 0.2s;border:none;background:none;width:calc(100% - 16px);text-align:left;position:relative}
+  .nav-item:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+  .nav-item.active{background:rgba(88,166,255,0.12);color:var(--accent);font-weight:600}
+  .nav-item .icon{font-size:18px;width:24px;text-align:center}
+  .nav-item .badge{margin-left:auto;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px}
+  
+  .sidebar-footer{padding:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .sidebar-footer .status-text{font-size:12px;color:var(--green);font-weight:600}
+  .version{margin-left:auto;font-size:11px;color:var(--text-secondary)}
+  
+  /* Main Content */
+  .main{margin-left:280px;flex:1;min-height:100vh}
+  .topbar{height:64px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
+  .topbar-left h2{font-size:20px;font-weight:700}
+  .topbar-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s}
+  .topbar-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .topbar-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .topbar-btn.primary:hover{background:#79c0ff}
+  
+  .content{padding:24px}
+  .page{display:none}
+  .page.active{display:block;animation:fadeIn 0.3s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  
+  /* Stats Grid */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all 0.2s}
+  .stat-card:hover{border-color:var(--border);transform:translateY(-2px)}
+  .stat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .stat-icon.blue{background:rgba(88,166,255,0.15)}
+  .stat-icon.green{background:rgba(63,185,80,0.15)}
+  .stat-icon.orange{background:rgba(210,153,34,0.15)}
+  .stat-icon.purple{background:rgba(188,140,255,0.15)}
+  .stat-value{font-size:28px;font-weight:800;margin-bottom:4px}
+  .stat-label{font-size:13px;color:var(--text-secondary)}
+  
+  /* Table */
+  .table-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px}
+  .table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .table-header h3{font-size:15px;font-weight:700}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;padding:12px 20px;font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);background:var(--bg-tertiary)}
+  td{padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(88,166,255,0.03)}
+  .cmd-name{font-family:'Courier New',monospace;font-weight:700;color:var(--accent);font-size:14px}
+  .status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700}
+  .status-badge.active{background:rgba(63,185,80,0.15);color:var(--green)}
+  .status-badge.paused{background:rgba(210,153,34,0.15);color:var(--orange)}
+  .status-badge.disabled{background:rgba(248,81,73,0.15);color:var(--red)}
+  
+  /* Toggle */
+  .toggle{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:background 0.3s}
+  .toggle.on{background:var(--accent)}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.3s}
+  .toggle.on::after{transform:translateX(20px)}
+  
+  /* Activity Feed */
+  .activity-feed{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:24px}
+  .activity-feed h3{font-size:15px;font-weight:700;margin-bottom:16px}
+  .feed-item{padding:12px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:8px;font-family:monospace;font-size:12px}
+  
+  @media(max-width:1024px){.sidebar{transform:translateX(-100%)}.main{margin-left:0}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="bot-avatar">A</div>
+    <div class="bot-info">
+      <div class="bot-name">ATR_dailybot</div>
+      <div class="bot-id">#2020494</div>
+    </div>
+  </div>
+  
+  <nav class="sidebar-nav">
+    <div class="nav-section">MAIN</div>
+    <button class="nav-item active" data-page="dashboard">
+      <span class="icon">📊</span> Dashboard
+    </button>
+    <button class="nav-item" data-page="commands">
+      <span class="icon">⌨️</span> Commands
+      <span class="badge" id="cmdCount">12</span>
+    </button>
+    <button class="nav-item" data-page="scheduled">
+      <span class="icon">📅</span> Scheduled
+    </button>
+    <button class="nav-item" data-page="broadcast">
+      <span class="icon"></span> Broadcast
+    </button>
+    
+    <div class="nav-section">MANAGEMENT</div>
+    <button class="nav-item" data-page="users">
+      <span class="icon">👥</span> Users
+      <span class="badge" id="userCount">1.2K</span>
+    </button>
+    <button class="nav-item" data-page="analytics">
+      <span class="icon">📈</span> Analytics
+    </button>
+    <button class="nav-item" data-page="groups">
+      <span class="icon">👨‍‍👧‍👦</span> Groups
+    </button>
+    
+    <div class="nav-section">DEVELOPER</div>
+    <button class="nav-item" data-page="tools">
+      <span class="icon">🛠️</span> Tools
+    </button>
+    <button class="nav-item" data-page="settings">
+      <span class="icon">️</span> Settings
+    </button>
+    <button class="nav-item" data-page="logs">
+      <span class="icon">📋</span> Logs
+    </button>
+  </nav>
+  
+  <div class="sidebar-footer">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Connecting...</span>
+    <span class="version">v2.4.1</span>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2 id="pageTitle">Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="refreshData()">🔄 Refresh</button>
+      <button class="topbar-btn primary" onclick="showToast('Feature coming soon!','success')">+ New Command</button>
+    </div>
+  </header>
+  
+  <div class="content">
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon blue"></div>
+          </div>
+          <div class="stat-value" id="statUsers">1,247</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon green">📨</div>
+          </div>
+          <div class="stat-value" id="statMsgs">0</div>
+          <div class="stat-label">Messages Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon orange">⏰</div>
+          </div>
+          <div class="stat-value" id="statSchedules">6</div>
+          <div class="stat-label">Active Schedules</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon purple">️</div>
+          </div>
+          <div class="stat-value" id="statCommands">12</div>
+          <div class="stat-label">Commands Active</div>
+        </div>
+      </div>
+      
+      <div class="activity-feed">
+        <h3>🕐 Live Activity Feed</h3>
+        <div id="activityFeed">
+          <div class="feed-item">[<span id="initTime"></span>] System initialized. Waiting for Telegram events...</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- COMMANDS PAGE -->
+    <div class="page" id="page-commands">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>⌨️ All Commands</h3>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Command</th><th>Answer</th><th>Aliases</th><th>Group</th><th>Status</th></tr>
+          </thead>
+          <tbody id="commandsTable">
+            <tr><td><span class="cmd-name">/start</span></td><td>Welcome message...</td><td>/hello, /hi</td><td>All</td><td><span class="status-badge active">● Active</span></td></tr>
+            <tr><td><span class="cmd-name">/help</span></td><td>Help menu...</td><td>/support</td><td>All</td><td><span class="status-badge active">● Active</span></td></tr>
+            <tr><td><span class="cmd-name">/dashboard</span></td><td>Dashboard view...</td><td>/menu</td><td>All</td><td><span class="status-badge active">● Active</span></td></tr>
+            <tr><td><span class="cmd-name">/daily</span></td><td>Daily briefing...</td><td>/today</td><td>Clients</td><td><span class="status-badge active">● Active</span></td></tr>
+            <tr><td><span class="cmd-name">/stats</span></td><td>Statistics...</td><td>/metrics</td><td>Admins</td><td><span class="status-badge active">● Active</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- OTHER PAGES (Placeholders) -->
+    <div class="page" id="page-scheduled"><h2>Scheduled Messages</h2><p>Feature coming soon...</p></div>
+    <div class="page" id="page-broadcast"><h2>Broadcast</h2><p>Feature coming soon...</p></div>
+    <div class="page" id="page-users"><h2>User Management</h2><p>Feature coming soon...</p></div>
+    <div class="page" id="page-analytics"><h2>Analytics</h2><p>Feature coming soon...</p></div>
+    <div class="page" id="page-groups"><h2>Groups</h2><p>Feature coming soon...</p></div>
+    <div class="page" id="page-tools"><h2>Developer Tools</h2><p>Feature coming soon...</p></div>
+    <div class="page" id="page-settings"><h2>Settings</h2><p>Feature coming soon...</p></div>
+    <div class="page" id="page-logs"><h2>Logs</h2><p>Feature coming soon...</p></div>
+  </div>
+</div>
+
 <script>
-const BACKEND_URL = 'https://management-seats-based-states.trycloudflare.com';
-const socket = io(BACKEND_URL, { transports: ['websocket', 'polling'], reconnection: true });
-socket.on('connect', () => { document.getElementById('wsDot').style.background='#3fb950'; document.getElementById('wsText').textContent='🟢 Live Connected'; addLog('✅ Connected to backend'); });
-socket.on('disconnect', () => { document.getElementById('wsDot').style.background='#f85149'; document.getElementById('wsText').textContent='🔴 Disconnected'; });
-socket.on('message:received', (d) => { addLog('📨 @' + d.username + ': ' + d.text); incrementStat('statMsgs'); });
-socket.on('command:executed', (d) => { addLog('⌨️ /' + d.command + ' by @' + d.user); });
-function addLog(m) { const f=document.getElementById('feed'); f.innerHTML='<div>['+new Date().toLocaleTimeString()+'] '+m+'</div>'+f.innerHTML; }
-function incrementStat(id) { const e=document.getElementById(id); e.textContent=parseInt(e.textContent)+1; }
-addLog('System initialized. Waiting for Telegram events...');
-</script></body></html>
+  // ==========================================
+  // 🔗 CRITICAL: UPDATE WITH YOUR CLOUDFLARE URL
+  // ==========================================
+  const BACKEND_URL = 'https://management-seats-based-states.trycloudflare.com';
+  
+  // Initialize Socket.IO
+  const socket = io(BACKEND_URL, {
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionAttempts: 10
+  });
+  
+  // Set initialization time
+  document.getElementById('initTime').textContent = new Date().toLocaleTimeString();
+  
+  // Connection status
+  socket.on('connect', () => {
+    document.getElementById('statusDot').style.background = 'var(--green)';
+    document.getElementById('statusText').textContent = 'Bot Online';
+    document.getElementById('statusText').style.color = 'var(--green)';
+    addLog('✅ Connected to backend WebSocket');
+  });
+  
+  socket.on('disconnect', () => {
+    document.getElementById('statusDot').style.background = 'var(--red)';
+    document.getElementById('statusText').textContent = 'Disconnected';
+    document.getElementById('statusText').style.color = 'var(--red)';
+  });
+  
+  // Real-time events
+  socket.on('message:received', (data) => {
+    addLog(`📨 New message from @${data.username}: "${data.text}"`);
+    incrementStat('statMsgs');
+  });
+  
+  socket.on('command:executed', (data) => {
+    addLog(`⌨️ Command /${data.command} executed by @${data.user}`);
+  });
+  
+  // Navigation
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const pageId = item.dataset.page;
+      
+      // Update active nav
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+      
+      // Show page
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + pageId).classList.add('active');
+      
+      // Update title
+      const titles = {
+        'dashboard': 'Dashboard',
+        'commands': 'Commands',
+        'scheduled': 'Scheduled Messages',
+        'broadcast': 'Broadcast',
+        'users': 'User Management',
+        'analytics': 'Analytics',
+        'groups': 'Groups',
+        'tools': 'Developer Tools',
+        'settings': 'Settings',
+        'logs': 'Logs'
+      };
+      document.getElementById('pageTitle').textContent = titles[pageId] || pageId;
+    });
+  });
+  
+  // Helper functions
+  function addLog(msg) {
+    const feed = document.getElementById('activityFeed');
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = 'feed-item';
+    div.textContent = `[${time}] ${msg}`;
+    feed.insertBefore(div, feed.firstChild);
+    
+    // Keep only last 50 messages
+    while (feed.children.length > 50) {
+      feed.removeChild(feed.lastChild);
+    }
+  }
+  
+  function incrementStat(id) {
+    const el = document.getElementById(id);
+    el.textContent = parseInt(el.textContent.replace(/,/g, '')) + 1;
+  }
+  
+  function refreshData() {
+    showToast('Data refreshed', 'success');
+  }
+  
+  function showToast(msg, type) {
+    alert(msg); // Simple alert for now
+  }
+</script>
+
+</body>
+</html>
