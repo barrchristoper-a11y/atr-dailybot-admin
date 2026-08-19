@@ -344,6 +344,76 @@
   function showToast(msg, type) {
     alert(msg); // Simple alert for now
   }
+ // ==========================================
+// 🔗 REAL-TIME WEBSOCKET CONNECTION
+// ==========================================
+const BACKEND_URL = 'https://management-seats-based-states.trycloudflare.com';
+
+const socket = io(BACKEND_URL, {
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 10
+});
+
+// Connection status
+socket.on('connect', () => {
+  document.querySelector('.status-dot').style.background = 'var(--green)';
+  document.querySelector('.status-text').textContent = 'Bot Online';
+  document.querySelector('.status-text').style.color = 'var(--green)';
+  addLogToFeed('✅ Connected to backend WebSocket');
+});
+
+socket.on('disconnect', () => {
+  document.querySelector('.status-dot').style.background = 'var(--red)';
+  document.querySelector('.status-text').textContent = 'Disconnected';
+  document.querySelector('.status-text').style.color = 'var(--red)';
+});
+
+// Real-time events
+socket.on('message:received', (data) => {
+  addLogToFeed(`📨 New message from @${data.username}: "${data.text}"`);
+  incrementCounter('statMsgs');
+});
+
+socket.on('command:executed', (data) => {
+  addLogToFeed(`⌨️ Command /${data.command} executed by @${data.user}`);
+});
+
+// Helper functions for live updates
+function addLogToFeed(msg) {
+  const feed = document.querySelector('.activity-list');
+  const time = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = 'activity-item';
+  div.innerHTML = `
+    <div class="activity-icon" style="background:var(--green-bg)">💬</div>
+    <div>
+      <div class="activity-text">${msg}</div>
+      <div class="activity-time">Just now</div>
+    </div>
+  `;
+  feed.insertBefore(div, feed.firstChild);
+  
+  // Keep only last 10 items
+  while (feed.children.length > 10) {
+    feed.removeChild(feed.lastChild);
+  }
+}
+
+function incrementCounter(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    const current = parseInt(el.textContent.replace(/,/g, ''));
+    el.textContent = (current + 1).toLocaleString();
+  }
+}
+
+// Initialize with current time
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('ATR_dailybot Admin Panel loaded');
+  console.log('Connecting to:', BACKEND_URL);
+});
 </script>
 
 </body>
