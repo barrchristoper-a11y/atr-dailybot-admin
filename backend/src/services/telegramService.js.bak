@@ -1,0 +1,127 @@
+const { Bot, webhookCallback } = require('grammy');
+const Command = require('../models/Command');
+const User = require('../models/User');
+const Log = require('../models/Log');
+
+let bot;
+
+async function initTelegram(app, io) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) throw new Error('TELEGRAM_BOT_TOKEN missing');
+
+    bot = new Bot(token);
+
+    // Middleware: track every update
+    bot.use(async (ctx, next) => {
+        const user = ctx.from;
+        if (user) {
+            await User.findOneAndUpdate(
+                { telegramId: user.id },
+                {
+                    $set: {
+                        username: user.username,
+                        firstName: user.first_name,
+                        lastName: user.last_name,
+                        language: user.language_code,
+                        lastActive: new Date()
+                    },
+                    $inc: { messageCount: 1 }
+                },
+                { upsert: true, new: true }
+            );
+        }
+        await next();
+    });
+
+    // Command handler — dynamic from DB
+    bot.on('message:text', async (ctx) => {
+        const text = ctx.message.text.trim();
+        const cmdText = text.startsWith('/') ? text : null;
+        if (!cmdText) return;
+
+        const cmdName = cmdText.split(' ')[0].toLowerCase();
+
+        // Find command (by name or alias)
+        const cmd = await Command.findOne({
+            $or: [
+                { command: cmdName },
+                { aliases: cmdName.substring(1) }
+            ],
+            status: 'active'
+        });
+
+        if (!cmd) {
+            await ctx.reply(`❓ Unknown command. Use /help to see available commands.`);
+            return;
+        }
+
+        // Increment usage
+        await Command.findByIdAndUpdate(cmd._id, { $inc: { usageCount: 1 } });
+
+        // Send response (supports markdown + inline keyboard)
+        try {
+            const response = JSON.parse(cmd.answer);
+            await ctx.reply(response.text, {
+                parse_mode: 'Markdown',
+                reply_markup: response.reply_markup
+            });
+        } catch (e) {
+            // Fallback: plain text
+            await ctx.reply(cmd.answer, { parse_mode: 'Markdown' });
+        }
+
+        // Log the command
+        await Log.create({
+            level: 'INFO',
+            type: 'command',
+            message: `User executed ${cmdName}`,
+            userId: ctx.from.id,
+            username: ctx.from.username,
+            command: cmdName
+        });
+
+        // Emit to admin panel via WebSocket
+        io.emit('command:executed', {
+            command: cmdName,
+            user: ctx.from.username || ctx.from.first_name,
+            timestamp: new Date().toISOString()
+        });
+    });
+
+    // Start command — welcome new users
+    bot.command('start', async (ctx) => {
+        await ctx.reply(
+            `🚀 *Welcome to ATR_dailybot!*\n\nI'm your daily briefing assistant. Use /help to see all commands.`,
+            { parse_mode: 'Markdown' }
+        );
+        await Log.create({
+            level: 'INFO',
+            type: 'user',
+            message: `New user started bot`,
+            userId: ctx.from.id,
+            username: ctx.from.username
+        });
+        io.emit('user:new', { user: ctx.from.username || ctx.from.first_name });
+    });
+
+    // Error handler
+    bot.catch((err) => {
+        console.error(' Bot error:', err);
+        Log.create({ level: 'ERROR', type: 'system', message: err.message });
+    });
+
+    // Register webhook with Telegram
+    const webhookUrl = `https://${process.env.DOMAIN}/api/webhook`;
+    await bot.api.setWebhook(webhookUrl, {
+        allowed_updates: ['message', 'callback_query', 'inline_query'],
+        drop_pending_updates: true
+    });
+    console.log(`✅ Webhook set: ${webhookUrl}`);
+
+    // Express route for webhook
+    app.post('/api/webhook', webhookCallback(bot));
+
+    return bot;
+}
+
+module.exports = { initTelegram, getBot: () => bot };

@@ -1,0 +1,1 @@
+const express=require('express'),router=express.Router();router.get('/',(req,res)=>res.json({status:'ok',route:'settings'}));module.exports=router;

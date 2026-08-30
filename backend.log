@@ -1,0 +1,9 @@
+[32m[INFO][0m ✅ MongoDB connected
+✅ Telegram webhook endpoint registered: POST /api/webhook
+✅ Telegram bot initialized
+[32m[INFO][0m ✅ Telegram Bot initialized
+✅ 0 scheduled jobs loaded
+[32m[INFO][0m ✅ Scheduler initialized
+[32m[INFO][0m 🚀 ATR_dailybot backend running on port 3002
+[32m[INFO][0m 📡 WebSocket server ready
+[32m[INFO][0m 🌐 API: http://localhost:3002

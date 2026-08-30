@@ -1,0 +1,30 @@
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  const socket = io('https://bot.atrpay.com', {
+    transports: ['websocket', 'polling']
+  });
+
+  socket.on('connect', () => {
+    console.log('✅ Connected to ATR_dailybot');
+    document.getElementById('connection-status').textContent = ' Live';
+  });
+
+  socket.on('command:executed', (data) => {
+    // Update command counter
+    updateCommandCount(data.command);
+    // Add to activity feed
+    addActivity(`User ${data.user} executed ${data.command}`);
+  });
+
+  socket.on('user:new', (data) => {
+    showToast(`👤 New user: ${data.user}`);
+  });
+
+  socket.on('broadcast:progress', (data) => {
+    updateProgress(data.percent);
+  });
+
+  socket.on('disconnect', () => {
+    document.getElementById('connection-status').textContent = '🔴 Disconnected';
+  });
+</script>

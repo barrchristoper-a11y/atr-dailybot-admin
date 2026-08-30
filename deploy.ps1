@@ -1,0 +1,443 @@
+﻿# ========================================================
+# ATR_dailybot COMPLETE DEPLOYMENT SCRIPT
+# Run from: C:\Users\tncyb\ATR_dailybot
+# ========================================================
+
+$ErrorActionPreference = "Stop"
+
+Write-Host ""
+Write-Host "========================================================" -ForegroundColor Cyan
+Write-Host "  ATR_dailybot COMPLETE DEPLOYMENT" -ForegroundColor Cyan
+Write-Host "========================================================" -ForegroundColor Cyan
+Write-Host ""
+
+# ========================================================
+# CONFIGURATION
+# ========================================================
+
+$basePath = "C:\Users\tncyb\ATR_dailybot"
+$backendPath = Join-Path $basePath "backend"
+$frontendPath = Join-Path $basePath "frontend"
+
+# Load Telegram token from environment variable.
+$botToken = $env:ATR_BOT_TOKEN
+
+if ([string]::IsNullOrWhiteSpace($botToken)) {
+    Write-Host "ERROR: ATR_BOT_TOKEN environment variable is not set." -ForegroundColor Red
+    Write-Host ""
+    Write-Host 'Set it for this PowerShell session with:' -ForegroundColor Yellow
+    Write-Host '$env:ATR_BOT_TOKEN = "YOUR_NEW_TELEGRAM_BOT_TOKEN"' -ForegroundColor White
+    exit 1
+}
+
+# ========================================================
+# PHASE 1: CHECK REQUIRED FILES AND FOLDERS
+# ========================================================
+
+Write-Host "PHASE 1: Checking project files..." -ForegroundColor Yellow
+
+if (!(Test-Path $basePath)) {
+    throw "Base folder not found: $basePath"
+}
+
+if (!(Test-Path $backendPath)) {
+    throw "Backend folder not found: $backendPath"
+}
+
+if (!(Test-Path $frontendPath)) {
+    throw "Frontend folder not found: $frontendPath"
+}
+
+$serverFile = Join-Path $backendPath "src\server.js"
+
+if (!(Test-Path $serverFile)) {
+    throw "Backend server file not found: $serverFile"
+}
+
+$modelsPath = Join-Path $backendPath "src\models"
+
+if (!(Test-Path $modelsPath)) {
+    Write-Host "  Creating models directory..." -ForegroundColor Yellow
+    New-Item -ItemType Directory -Path $modelsPath -Force | Out-Null
+}
+
+Write-Host "  Base path OK" -ForegroundColor Green
+Write-Host "  Backend path OK" -ForegroundColor Green
+Write-Host "  Frontend path OK" -ForegroundColor Green
+Write-Host "  Server file OK" -ForegroundColor Green
+
+# ========================================================
+# PHASE 2: CHECK NODE.JS
+# ========================================================
+
+Write-Host ""
+Write-Host "PHASE 2: Checking Node.js..." -ForegroundColor Yellow
+
+try {
+    $nodeVersion = & node --version
+    Write-Host "  Node.js detected: $nodeVersion" -ForegroundColor Green
+}
+catch {
+    throw "Node.js is not available in PATH."
+}
+
+# ========================================================
+# PHASE 3: CLEAN UP EXISTING PROCESSES
+# ========================================================
+
+Write-Host ""
+Write-Host "PHASE 3: Cleaning up existing processes..." -ForegroundColor Yellow
+
+$existingConnections = Get-NetTCPConnection -LocalPort 3002 -ErrorAction SilentlyContinue
+
+if ($existingConnections) {
+    Write-Host "  Port 3002 is in use. Stopping existing process..." -ForegroundColor Yellow
+
+    foreach ($connection in $existingConnections) {
+        try {
+            Stop-Process -Id $connection.OwningProcess -Force -ErrorAction SilentlyContinue
+        }
+        catch {
+            Write-Host "  Could not stop process $($connection.OwningProcess)" -ForegroundColor Yellow
+        }
+    }
+
+    Start-Sleep -Seconds 2
+}
+
+Write-Host "  Port 3002 ready" -ForegroundColor Green
+
+$cloudflaredProcesses = Get-Process -Name "cloudflared" -ErrorAction SilentlyContinue
+
+if ($cloudflaredProcesses) {
+    Write-Host "  Stopping existing cloudflared process..." -ForegroundColor Yellow
+    $cloudflaredProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+}
+
+Write-Host "  Process cleanup complete" -ForegroundColor Green
+
+# ========================================================
+# PHASE 4: START BACKEND
+# ========================================================
+
+Write-Host ""
+Write-Host "PHASE 4: Starting backend server..." -ForegroundColor Yellow
+
+$backendLog = Join-Path $basePath "backend.log"
+$backendErrLog = Join-Path $basePath "backend_err.log"
+
+if (Test-Path $backendLog) {
+    Remove-Item $backendLog -Force
+}
+
+if (Test-Path $backendErrLog) {
+    Remove-Item $backendErrLog -Force
+}
+
+$nodeProcess = Start-Process `
+    -FilePath "node" `
+    -ArgumentList "src/server.js" `
+    -WorkingDirectory $backendPath `
+    -RedirectStandardOutput $backendLog `
+    -RedirectStandardError $backendErrLog `
+    -PassThru
+
+Write-Host "  Backend process started. PID: $($nodeProcess.Id)" -ForegroundColor Cyan
+Write-Host "  Waiting for backend health check..." -ForegroundColor Cyan
+
+$started = $false
+$health = $null
+
+for ($i = 1; $i -le 15; $i++) {
+
+    try {
+        $health = Invoke-RestMethod `
+            -Uri "http://127.0.0.1:3002/health" `
+            -Method Get `
+            -TimeoutSec 3
+
+        if ($null -ne $health) {
+            $started = $true
+            break
+        }
+    }
+    catch {
+        Start-Sleep -Seconds 1
+    }
+}
+
+if (!$started) {
+
+    Write-Host ""
+    Write-Host "BACKEND FAILED TO START" -ForegroundColor Red
+    Write-Host ""
+
+    if (Test-Path $backendErrLog) {
+        Write-Host "Backend error log:" -ForegroundColor Yellow
+        Get-Content $backendErrLog -Tail 30
+    }
+
+    Write-Host ""
+    Write-Host "Backend output log:" -ForegroundColor Yellow
+
+    if (Test-Path $backendLog) {
+        Get-Content $backendLog -Tail 30
+    }
+
+    exit 1
+}
+
+Write-Host "  Backend is responding on port 3002" -ForegroundColor Green
+
+if ($health.status) {
+    Write-Host "  Status: $($health.status)" -ForegroundColor Cyan
+}
+
+if ($health.services) {
+
+    if ($health.services.mongodb) {
+        Write-Host "  MongoDB: $($health.services.mongodb)" -ForegroundColor Cyan
+    }
+
+    if ($health.services.telegram) {
+        Write-Host "  Telegram: $($health.services.telegram)" -ForegroundColor Cyan
+    }
+}
+
+# ========================================================
+# PHASE 5: START CLOUDFLARE TUNNEL
+# ========================================================
+
+Write-Host ""
+Write-Host "PHASE 5: Starting Cloudflare tunnel..." -ForegroundColor Yellow
+
+$cloudflaredExe = Join-Path $basePath "cloudflared.exe"
+
+if (!(Test-Path $cloudflaredExe)) {
+    throw "cloudflared.exe not found at: $cloudflaredExe"
+}
+
+$cfLog = Join-Path $basePath "cf_tunnel.log"
+$cfErrLog = Join-Path $basePath "cf_tunnel_err.log"
+
+if (Test-Path $cfLog) {
+    Remove-Item $cfLog -Force
+}
+
+if (Test-Path $cfErrLog) {
+    Remove-Item $cfErrLog -Force
+}
+
+$cloudflareProcess = Start-Process `
+    -FilePath $cloudflaredExe `
+    -ArgumentList @(
+    "tunnel",
+    "--url",
+    "http://127.0.0.1:3002"
+) `
+    -RedirectStandardOutput $cfLog `
+    -RedirectStandardError $cfErrLog `
+    -PassThru
+
+Write-Host "  Cloudflare process started. PID: $($cloudflareProcess.Id)" -ForegroundColor Cyan
+Write-Host "  Waiting for tunnel URL..." -ForegroundColor Cyan
+
+$tunnelUrl = $null
+
+for ($i = 1; $i -le 30; $i++) {
+
+    Start-Sleep -Seconds 1
+
+    $combinedLog = ""
+
+    if (Test-Path $cfLog) {
+        $combinedLog += Get-Content $cfLog -Raw -ErrorAction SilentlyContinue
+    }
+
+    if (Test-Path $cfErrLog) {
+        $combinedLog += "`n"
+        $combinedLog += Get-Content $cfErrLog -Raw -ErrorAction SilentlyContinue
+    }
+
+    if ($combinedLog -match 'https://[a-zA-Z0-9-]+\.trycloudflare\.com') {
+        $tunnelUrl = $Matches[0]
+        break
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($tunnelUrl)) {
+
+    Write-Host ""
+    Write-Host "Could not automatically detect the tunnel URL." -ForegroundColor Yellow
+
+    if (Test-Path $cfErrLog) {
+        Write-Host ""
+        Write-Host "Cloudflare output:" -ForegroundColor Yellow
+        Get-Content $cfErrLog -Tail 20
+    }
+
+    $tunnelUrl = Read-Host "Paste the trycloudflare.com URL"
+}
+
+if ([string]::IsNullOrWhiteSpace($tunnelUrl)) {
+    throw "No Cloudflare tunnel URL was provided."
+}
+
+$tunnelUrl = $tunnelUrl.Trim().TrimEnd("/")
+
+Write-Host "  Tunnel URL: $tunnelUrl" -ForegroundColor Green
+
+# ========================================================
+# PHASE 6: UPDATE FRONTEND
+# ========================================================
+
+Write-Host ""
+Write-Host "PHASE 6: Updating frontend..." -ForegroundColor Yellow
+
+$indexHtml = Join-Path $frontendPath "index.html"
+
+if (!(Test-Path $indexHtml)) {
+    throw "Frontend index.html not found: $indexHtml"
+}
+
+$htmlContent = Get-Content $indexHtml -Raw
+
+$updated = $false
+
+# Replace an existing trycloudflare URL.
+if ($htmlContent -match 'https://[a-zA-Z0-9-]+\.trycloudflare\.com') {
+
+    $htmlContent = $htmlContent -replace `
+        'https://[a-zA-Z0-9-]+\.trycloudflare\.com',
+    $tunnelUrl
+
+    $updated = $true
+}
+
+if ($updated) {
+
+    [System.IO.File]::WriteAllText(
+        $indexHtml,
+        $htmlContent,
+        (New-Object System.Text.UTF8Encoding $false)
+    )
+
+    Write-Host "  Frontend tunnel URL updated" -ForegroundColor Green
+}
+else {
+
+    Write-Host "  No existing trycloudflare URL found in index.html." -ForegroundColor Yellow
+    Write-Host "  The frontend may require manual API URL configuration." -ForegroundColor Yellow
+}
+
+# ========================================================
+# PHASE 7: SET TELEGRAM WEBHOOK
+# ========================================================
+
+Write-Host ""
+Write-Host "PHASE 7: Configuring Telegram webhook..." -ForegroundColor Yellow
+
+$webhookUrl = "$tunnelUrl/api/webhook"
+
+$body = @{
+    url             = $webhookUrl
+    allowed_updates = @(
+        "message",
+        "callback_query"
+    )
+} | ConvertTo-Json -Depth 5
+
+try {
+
+    $response = Invoke-RestMethod `
+        -Uri "https://api.telegram.org/bot$botToken/setWebhook" `
+        -Method Post `
+        -Body $body `
+        -ContentType "application/json"
+
+    if ($response.ok) {
+        Write-Host "  Telegram webhook configured" -ForegroundColor Green
+        Write-Host "  Webhook: $webhookUrl" -ForegroundColor Cyan
+    }
+    else {
+        Write-Host "  Telegram API returned an error:" -ForegroundColor Red
+        Write-Host "  $($response.description)" -ForegroundColor Red
+    }
+}
+catch {
+
+    Write-Host "  Failed to configure Telegram webhook." -ForegroundColor Red
+    Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
+}
+
+# ========================================================
+# PHASE 8: VERIFY TELEGRAM WEBHOOK
+# ========================================================
+
+Write-Host ""
+Write-Host "PHASE 8: Verifying Telegram webhook..." -ForegroundColor Yellow
+
+try {
+
+    $verify = Invoke-RestMethod `
+        -Uri "https://api.telegram.org/bot$botToken/getWebhookInfo" `
+        -Method Get
+
+    if ($verify.ok) {
+
+        Write-Host "  Current webhook: $($verify.result.url)" -ForegroundColor Cyan
+        Write-Host "  Pending updates: $($verify.result.pending_update_count)" -ForegroundColor Cyan
+
+        if ($verify.result.last_error_message) {
+            Write-Host "  Last Telegram error: $($verify.result.last_error_message)" -ForegroundColor Yellow
+        }
+    }
+}
+catch {
+
+    Write-Host "  Could not verify webhook." -ForegroundColor Yellow
+    Write-Host "  $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+# ========================================================
+# FINAL SUMMARY
+# ========================================================
+
+Write-Host ""
+Write-Host "========================================================" -ForegroundColor Cyan
+Write-Host "  DEPLOYMENT COMPLETE" -ForegroundColor Green
+Write-Host "========================================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "Backend:" -ForegroundColor Yellow
+Write-Host "  http://127.0.0.1:3002" -ForegroundColor White
+
+Write-Host ""
+Write-Host "Cloudflare Tunnel:" -ForegroundColor Yellow
+Write-Host "  $tunnelUrl" -ForegroundColor White
+
+Write-Host ""
+Write-Host "Telegram Webhook:" -ForegroundColor Yellow
+Write-Host "  $webhookUrl" -ForegroundColor White
+
+Write-Host ""
+Write-Host "Frontend file:" -ForegroundColor Yellow
+Write-Host "  $indexHtml" -ForegroundColor White
+
+Write-Host ""
+Write-Host "Logs:" -ForegroundColor Yellow
+Write-Host "  Backend output: $backendLog" -ForegroundColor White
+Write-Host "  Backend errors: $backendErrLog" -ForegroundColor White
+Write-Host "  Cloudflare output: $cfLog" -ForegroundColor White
+Write-Host "  Cloudflare errors: $cfErrLog" -ForegroundColor White
+
+Write-Host ""
+Write-Host "IMPORTANT:" -ForegroundColor Yellow
+Write-Host "The temporary trycloudflare URL changes whenever the tunnel is restarted." -ForegroundColor White
+Write-Host "Run this deployment again after restarting the tunnel to update the webhook." -ForegroundColor White
+
+Write-Host ""
+Read-Host "Press Enter to exit"
+
+
