@@ -1,2733 +1,725 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATR_dailybot · Admin Control Panel</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-inter@5.0.0/index.css">
-    <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-
-        :root {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #21262d;
-            --bg-card: #1c2128;
-            --border: #30363d;
-            --border-light: #484f58;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --text-muted: #6e7681;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
-            --green: #3fb950;
-            --green-bg: rgba(63, 185, 80, 0.15);
-            --red: #f85149;
-            --red-bg: rgba(248, 81, 73, 0.15);
-            --orange: #d29922;
-            --orange-bg: rgba(210, 153, 34, 0.15);
-            --purple: #bc8cff;
-            --purple-bg: rgba(188, 140, 255, 0.15);
-            --cyan: #39d2c0;
-            --sidebar-w: 260px;
-            --header-h: 60px;
-        }
-
-        html {
-            scroll-behavior: smooth
-        }
-
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: var(--sidebar-w);
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-            transition: transform 0.3s;
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .bot-avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 800;
-            color: #fff;
-            flex-shrink: 0;
-        }
-
-        .bot-info .bot-name {
-            font-size: 15px;
-            font-weight: 700
-        }
-
-        .bot-info .bot-id {
-            font-size: 11px;
-            color: var(--text-muted)
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            padding: 12px 0;
-            overflow-y: auto
-        }
-
-        .nav-section {
-            padding: 8px 16px;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 8px
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 16px;
-            margin: 2px 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-            border: none;
-            background: none;
-            width: calc(100% - 16px);
-            text-align: left;
-        }
-
-        .nav-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary)
-        }
-
-        .nav-item.active {
-            background: rgba(88, 166, 255, 0.12);
-            color: var(--accent);
-            font-weight: 600
-        }
-
-        .nav-item .icon {
-            font-size: 18px;
-            width: 24px;
-            text-align: center
-        }
-
-        .nav-item .badge {
-            margin-left: auto;
-            background: var(--accent);
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 100px;
-        }
-
-        .sidebar-footer {
-            padding: 16px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--green);
-            animation: pulse 2s infinite
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1
-            }
-
-            50% {
-                opacity: 0.4
-            }
-        }
-
-        .sidebar-footer .status-text {
-            font-size: 12px;
-            color: var(--green);
-            font-weight: 600
-        }
-
-        /* Main Content */
-        .main {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            min-height: 100vh;
-        }
-
-        .topbar {
-            height: var(--header-h);
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-
-        .topbar-left {
-            display: flex;
-            align-items: center;
-            gap: 16px
-        }
-
-        .topbar-left h2 {
-            font-size: 18px;
-            font-weight: 700
-        }
-
-        .topbar-left .breadcrumb {
-            font-size: 13px;
-            color: var(--text-muted)
-        }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
-
-        .topbar-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-        }
-
-        .topbar-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent)
-        }
-
-        .topbar-btn.primary {
-            background: var(--accent);
-            color: #fff;
-            border-color: var(--accent)
-        }
-
-        .topbar-btn.primary:hover {
-            background: var(--accent-hover)
-        }
-
-        .hamburger {
-            display: none;
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            font-size: 24px;
-            cursor: pointer
-        }
-
-        /* Content Area */
-        .content {
-            padding: 24px
-        }
-
-        .page {
-            display: none
-        }
-
-        .page.active {
-            display: block;
-            animation: fadeIn 0.3s ease
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-
-        /* Dashboard Stats */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.2s;
-        }
-
-        .stat-card:hover {
-            border-color: var(--border-light);
-            transform: translateY(-2px)
-        }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px
-        }
-
-        .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .stat-icon.blue {
-            background: rgba(88, 166, 255, 0.15)
-        }
-
-        .stat-icon.green {
-            background: var(--green-bg)
-        }
-
-        .stat-icon.orange {
-            background: var(--orange-bg)
-        }
-
-        .stat-icon.purple {
-            background: var(--purple-bg)
-        }
-
-        .stat-trend {
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px
-        }
-
-        .stat-trend.up {
-            color: var(--green)
-        }
-
-        .stat-trend.down {
-            color: var(--red)
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 4px
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: var(--text-muted)
-        }
-
-        /* Charts Area */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 16px;
-            margin-bottom: 24px
-        }
-
-        .chart-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .chart-card h3 {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 16px
-        }
-
-        .chart-bar-container {
-            display: flex;
-            align-items: flex-end;
-            gap: 8px;
-            height: 160px;
-            padding-top: 10px
-        }
-
-        .chart-bar {
-            flex: 1;
-            border-radius: 6px 6px 0 0;
-            background: linear-gradient(180deg, var(--accent), rgba(88, 166, 255, 0.3));
-            min-height: 8px;
-            position: relative;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .chart-bar:hover {
-            opacity: 0.8
-        }
-
-        .chart-bar .tooltip {
-            position: absolute;
-            top: -28px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-tertiary);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-        }
-
-        .chart-bar:hover .tooltip {
-            opacity: 1
-        }
-
-        .chart-labels {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px
-        }
-
-        .chart-labels span {
-            flex: 1;
-            text-align: center;
-            font-size: 10px;
-            color: var(--text-muted)
-        }
-
-        /* Activity Feed */
-        .activity-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px
-        }
-
-        .activity-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px;
-            border-radius: 8px;
-            background: var(--bg-tertiary);
-        }
-
-        .activity-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-
-        .activity-text {
-            font-size: 13px;
-            line-height: 1.5
-        }
-
-        .activity-text strong {
-            color: var(--text-primary)
-        }
-
-        .activity-time {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 2px
-        }
-
-        /* Commands Table */
-        .table-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 24px;
-        }
-
-        .table-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .table-header h3 {
-            font-size: 15px;
-            font-weight: 700
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 12px;
-        }
-
-        .search-box input {
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            font-size: 13px;
-            outline: none;
-            width: 200px;
-        }
-
-        .search-box input::placeholder {
-            color: var(--text-muted)
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse
-        }
-
-        th {
-            text-align: left;
-            padding: 12px 20px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-tertiary);
-        }
-
-        td {
-            padding: 14px 20px;
-            font-size: 13px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        tr:last-child td {
-            border-bottom: none
-        }
-
-        tr:hover td {
-            background: rgba(88, 166, 255, 0.03)
-        }
-
-        .cmd-name {
-            font-family: 'Courier New', monospace;
-            font-weight: 700;
-            color: var(--accent);
-            font-size: 14px;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 100px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .status-badge.active {
-            background: var(--green-bg);
-            color: var(--green)
-        }
-
-        .status-badge.paused {
-            background: var(--orange-bg);
-            color: var(--orange)
-        }
-
-        .status-badge.disabled {
-            background: var(--red-bg);
-            color: var(--red)
-        }
-
-        .action-btns {
-            display: flex;
-            gap: 6px
-        }
-
-        .action-btn {
-            padding: 6px 10px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .action-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent)
-        }
-
-        .action-btn.danger:hover {
-            border-color: var(--red);
-            color: var(--red)
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-overlay.active {
-            display: flex
-        }
-
-        .modal {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            width: 100%;
-            max-width: 560px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: modalIn 0.3s ease;
-        }
-
-        @keyframes modalIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95)
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1)
-            }
-        }
-
-        .modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            font-size: 18px;
-            font-weight: 700
-        }
-
-        .modal-close {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            border: none;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .modal-close:hover {
-            background: var(--red-bg);
-            color: var(--red)
-        }
-
-        .modal-body {
-            padding: 24px
-        }
-
-        .form-group {
-            margin-bottom: 20px
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            font-size: 14px;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            border-color: var(--accent);
-        }
-
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical
-        }
-
-        .form-group .hint {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 4px
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px
-        }
-
-        .toggle-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 14px;
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-
-        .toggle-row .label {
-            font-size: 14px;
-            font-weight: 600
-        }
-
-        .toggle {
-            width: 44px;
-            height: 24px;
-            border-radius: 12px;
-            background: var(--border);
-            position: relative;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .toggle.on {
-            background: var(--accent)
-        }
-
-        .toggle::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #fff;
-            transition: transform 0.3s;
-        }
-
-        .toggle.on::after {
-            transform: translateX(20px)
-        }
-
-        .modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border)
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--border-light)
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #fff
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover)
-        }
-
-        .btn-danger {
-            background: var(--red-bg);
-            color: var(--red);
-            border: 1px solid var(--red)
-        }
-
-        .btn-danger:hover {
-            background: var(--red);
-            color: #fff
-        }
-
-        /* Scheduled Messages */
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px
-        }
-
-        .schedule-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.2s;
-        }
-
-        .schedule-card:hover {
-            border-color: var(--border-light)
-        }
-
-        .schedule-card .time {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--accent);
-            margin-bottom: 4px;
-        }
-
-        .schedule-card .freq {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 12px
-        }
-
-        .schedule-card .msg {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 12px
-        }
-
-        .schedule-card .meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center
-        }
-
-        .schedule-card .users {
-            font-size: 11px;
-            color: var(--text-muted)
-        }
-
-        /* Broadcast */
-        .broadcast-form {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .broadcast-form h3 {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 16px
-        }
-
-        .char-count {
-            font-size: 12px;
-            color: var(--text-muted);
-            text-align: right;
-            margin-top: 4px
-        }
-
-        /* Users */
-        .user-avatar-sm {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
-            flex-shrink: 0;
-        }
-
-        .user-info-cell {
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .user-info-cell .name {
-            font-weight: 600;
-            font-size: 13px
-        }
-
-        .user-info-cell .username {
-            font-size: 11px;
-            color: var(--text-muted)
-        }
-
-        /* Tools Grid */
-        .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px
-        }
-
-        .tool-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .tool-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px)
-        }
-
-        .tool-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            margin-bottom: 16px;
-        }
-
-        .tool-card h4 {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 6px
-        }
-
-        .tool-card p {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.5
-        }
-
-        /* Settings */
-        .settings-section {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 16px;
-        }
-
-        .settings-section h3 {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border)
-        }
-
-        .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .setting-row:last-child {
-            border-bottom: none
-        }
-
-        .setting-info .setting-name {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px
-        }
-
-        .setting-info .setting-desc {
-            font-size: 12px;
-            color: var(--text-muted)
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            padding: 14px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1
-        }
-
-        .toast.success {
-            border-color: var(--green)
-        }
-
-        .toast.error {
-            border-color: var(--red)
-        }
-
-        /* Responsive */
-        @media(max-width:1024px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr)
-            }
-
-            .charts-grid {
-                grid-template-columns: 1fr
-            }
-
-            .schedule-grid {
-                grid-template-columns: 1fr
-            }
-
-            .tools-grid {
-                grid-template-columns: repeat(2, 1fr)
-            }
-        }
-
-        @media(max-width:768px) {
-            .sidebar {
-                transform: translateX(-100%)
-            }
-
-            .sidebar.open {
-                transform: translateX(0)
-            }
-
-            .main {
-                margin-left: 0
-            }
-
-            .hamburger {
-                display: block
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr
-            }
-
-            .form-row {
-                grid-template-columns: 1fr
-            }
-
-            .tools-grid {
-                grid-template-columns: 1fr
-            }
-
-            .content {
-                padding: 16px
-            }
-
-            table {
-                font-size: 12px
-            }
-
-            th,
-            td {
-                padding: 10px 12px
-            }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary)
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border-light)
-        }
-
-        /* Code block in modal */
-        .code-preview {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.6;
-            color: var(--green);
-            max-height: 200px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            margin-top: 12px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATR_dailybot · Admin Control Panel</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-inter@5.0.0/index.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg-primary:#0d1117;--bg-secondary:#161b22;--bg-tertiary:#21262d;--bg-card:#1c2128;
+    --border:#30363d;--border-light:#484f58;--text-primary:#e6edf3;--text-secondary:#8b949e;
+    --text-muted:#6e7681;--accent:#58a6ff;--accent-hover:#79c0ff;--green:#3fb950;
+    --green-bg:rgba(63,185,80,0.15);--red:#f85149;--red-bg:rgba(248,81,73,0.15);
+    --orange:#d29922;--orange-bg:rgba(210,153,34,0.15);--purple:#bc8cff;
+    --purple-bg:rgba(188,140,255,0.15);--cyan:#39d2c0;--sidebar-w:260px;--header-h:60px;
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;display:flex}
+  .sidebar{width:var(--sidebar-w);background:var(--bg-secondary);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+  .sidebar-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .bot-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0}
+  .bot-info .bot-name{font-size:15px;font-weight:700}
+  .bot-info .bot-id{font-size:11px;color:var(--text-muted)}
+  .sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+  .nav-section{padding:8px 16px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:8px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:10px 16px;margin:2px 8px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text-secondary);transition:all .2s;border:none;background:none;width:calc(100% - 16px);text-align:left}
+  .nav-item:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+  .nav-item.active{background:rgba(88,166,255,0.12);color:var(--accent);font-weight:600}
+  .nav-item .icon{font-size:18px;width:24px;text-align:center}
+  .nav-item .badge{margin-left:auto;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px}
+  .sidebar-footer{padding:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+  .status-dot.offline{background:var(--red);animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .sidebar-footer .status-text{font-size:12px;color:var(--green);font-weight:600}
+  .main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+  .topbar{height:var(--header-h);background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
+  .topbar-left{display:flex;align-items:center;gap:16px}
+  .topbar-left h2{font-size:18px;font-weight:700}
+  .topbar-left .breadcrumb{font-size:13px;color:var(--text-muted)}
+  .topbar-right{display:flex;align-items:center;gap:12px}
+  .topbar-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s}
+  .topbar-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .topbar-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .topbar-btn.primary:hover{background:var(--accent-hover)}
+  .hamburger{display:none;background:none;border:none;color:var(--text-primary);font-size:24px;cursor:pointer}
+  .content{padding:24px}
+  .page{display:none}
+  .page.active{display:block;animation:fadeIn .3s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s}
+  .stat-card:hover{border-color:var(--border-light);transform:translateY(-2px)}
+  .stat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .stat-icon.blue{background:rgba(88,166,255,0.15)}
+  .stat-icon.green{background:var(--green-bg)}
+  .stat-icon.orange{background:var(--orange-bg)}
+  .stat-icon.purple{background:var(--purple-bg)}
+  .stat-trend{font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px}
+  .stat-trend.up{color:var(--green)}
+  .stat-trend.down{color:var(--red)}
+  .stat-value{font-size:28px;font-weight:800;margin-bottom:4px}
+  .stat-label{font-size:13px;color:var(--text-muted)}
+  .charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+  .chart-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .chart-card h3{font-size:15px;font-weight:700;margin-bottom:16px}
+  .chart-bar-container{display:flex;align-items:flex-end;gap:8px;height:160px;padding-top:10px}
+  .chart-bar{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--accent),rgba(88,166,255,0.3));min-height:8px;position:relative;transition:all .3s;cursor:pointer}
+  .chart-bar:hover{opacity:.8}
+  .chart-bar .tooltip{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:var(--bg-tertiary);padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s}
+  .chart-bar:hover .tooltip{opacity:1}
+  .chart-labels{display:flex;gap:8px;margin-top:8px}
+  .chart-labels span{flex:1;text-align:center;font-size:10px;color:var(--text-muted)}
+  .activity-list{display:flex;flex-direction:column;gap:12px}
+  .activity-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:8px;background:var(--bg-tertiary)}
+  .activity-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .activity-text{font-size:13px;line-height:1.5}
+  .activity-text strong{color:var(--text-primary)}
+  .activity-time{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .table-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px}
+  .table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .table-header h3{font-size:15px;font-weight:700}
+  .search-box{display:flex;align-items:center;gap:8px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;padding:8px 12px}
+  .search-box input{background:none;border:none;color:var(--text-primary);font-size:13px;outline:none;width:200px}
+  .search-box input::placeholder{color:var(--text-muted)}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;padding:12px 20px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--bg-tertiary)}
+  td{padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(88,166,255,0.03)}
+  .cmd-name{font-family:'Courier New',monospace;font-weight:700;color:var(--accent);font-size:14px}
+  .status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700}
+  .status-badge.active{background:var(--green-bg);color:var(--green)}
+  .status-badge.paused{background:var(--orange-bg);color:var(--orange)}
+  .status-badge.disabled{background:var(--red-bg);color:var(--red)}
+  .action-btns{display:flex;gap:6px}
+  .action-btn{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);font-size:12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px}
+  .action-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .action-btn.danger:hover{border-color:var(--red);color:var(--red)}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+  .modal-overlay.active{display:flex}
+  .modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:modalIn .3s ease}
+  @keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+  .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .modal-header h3{font-size:18px;font-weight:700}
+  .modal-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .modal-close:hover{background:var(--red-bg);color:var(--red)}
+  .modal-body{padding:24px}
+  .form-group{margin-bottom:20px}
+  .form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px}
+  .form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
+  .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent)}
+  .form-group textarea{min-height:100px;resize:vertical}
+  .form-group .hint{font-size:11px;color:var(--text-muted);margin-top:4px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:12px}
+  .toggle-row .label{font-size:14px;font-weight:600}
+  .toggle{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:background .3s}
+  .toggle.on{background:var(--accent)}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s}
+  .toggle.on::after{transform:translateX(20px)}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+  .btn{padding:10px 20px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+  .btn-secondary{background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border)}
+  .btn-secondary:hover{border-color:var(--border-light)}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent-hover)}
+  .btn-danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+  .btn-danger:hover{background:var(--red);color:#fff}
+  .schedule-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .schedule-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s}
+  .schedule-card:hover{border-color:var(--border-light)}
+  .schedule-card .time{font-size:24px;font-weight:800;color:var(--accent);margin-bottom:4px}
+  .schedule-card .freq{font-size:12px;color:var(--text-muted);margin-bottom:12px}
+  .schedule-card .msg{font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px}
+  .schedule-card .meta{display:flex;justify-content:space-between;align-items:center}
+  .schedule-card .users{font-size:11px;color:var(--text-muted)}
+  .broadcast-form{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px}
+  .broadcast-form h3{font-size:16px;font-weight:700;margin-bottom:16px}
+  .char-count{font-size:12px;color:var(--text-muted);text-align:right;margin-top:4px}
+  .user-avatar-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+  .user-info-cell{display:flex;align-items:center;gap:10px}
+  .user-info-cell .name{font-weight:600;font-size:13px}
+  .user-info-cell .username{font-size:11px;color:var(--text-muted)}
+  .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .tool-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:24px;cursor:pointer;transition:all .2s}
+  .tool-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .tool-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+  .tool-card h4{font-size:15px;font-weight:700;margin-bottom:6px}
+  .tool-card p{font-size:13px;color:var(--text-muted);line-height:1.5}
+  .settings-section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+  .settings-section h3{font-size:15px;font-weight:700;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+  .setting-row:last-child{border-bottom:none}
+  .setting-info .setting-name{font-size:14px;font-weight:600;margin-bottom:2px}
+  .setting-info .setting-desc{font-size:12px;color:var(--text-muted)}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--bg-secondary);border:1px solid var(--border);padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:2000;display:flex;align-items:center;gap:10px;transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 10px 40px rgba(0,0,0,0.3)}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.success{border-color:var(--green)}
+  .toast.error{border-color:var(--red)}
+  @media(max-width:1024px){.stats-grid{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}.schedule-grid{grid-template-columns:1fr}.tools-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.hamburger{display:block}.stats-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.tools-grid{grid-template-columns:1fr}.content{padding:16px}table{font-size:12px}th,td{padding:10px 12px}}
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:var(--bg-primary)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+  .code-preview{background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;color:var(--green);max-height:200px;overflow-y:auto;white-space:pre-wrap;margin-top:12px}
+</style>
 </head>
-
 <body>
 
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="bot-avatar">A</div>
-            <div class="bot-info">
-                <div class="bot-name">ATR_dailybot</div>
-                <div class="bot-id">#2020494</div>
-            </div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="bot-avatar">A</div>
+    <div class="bot-info">
+      <div class="bot-name">ATR_dailybot</div>
+      <div class="bot-id">#2020494</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <button class="nav-item active" data-page="dashboard"><span class="icon">📊</span> Dashboard</button>
+    <button class="nav-item" data-page="commands"><span class="icon">⌨️</span> Commands <span class="badge" id="cmdBadge">–</span></button>
+    <button class="nav-item" data-page="scheduled"><span class="icon">📅</span> Scheduled</button>
+    <button class="nav-item" data-page="broadcast"><span class="icon"></span> Broadcast</button>
+    <div class="nav-section">Management</div>
+    <button class="nav-item" data-page="users"><span class="icon">👥</span> Users <span class="badge" id="userBadge">–</span></button>
+    <button class="nav-item" data-page="analytics"><span class="icon">📈</span> Analytics</button>
+    <button class="nav-item" data-page="groups"><span class="icon">👨‍👩‍</span> Groups</button>
+    <div class="nav-section">Developer</div>
+    <button class="nav-item" data-page="tools"><span class="icon">🛠️</span> Tools</button>
+    <button class="nav-item" data-page="settings"><span class="icon">⚙️</span> Settings</button>
+    <button class="nav-item" data-page="logs"><span class="icon">📋</span> Logs</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="status-dot offline" id="statusDot"></div>
+    <span class="status-text" id="statusText">Connecting…</span>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">v2.4.1</span>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div>
+        <h2 id="pageTitle">Dashboard</h2>
+        <div class="breadcrumb" id="pageBreadcrumb">ATR_dailybot · Control Center</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn primary" onclick="openModal('commandModal')">+ New Command</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-header"><div class="stat-icon blue">👥</div></div><div class="stat-value" id="totalUsers">–</div><div class="stat-label">Total Users</div></div>
+        <div class="stat-card"><div class="stat-header"><div class="stat-icon green">📨</div></div><div class="stat-value" id="todayMessages">–</div><div class="stat-label">Messages Today</div></div>
+        <div class="stat-card"><div class="stat-header"><div class="stat-icon orange">⏰</div></div><div class="stat-value" id="activeSchedules">–</div><div class="stat-label">Active Schedules</div></div>
+        <div class="stat-card"><div class="stat-header"><div class="stat-icon purple">⌨️</div></div><div class="stat-value" id="totalCommands">–</div><div class="stat-label">Commands Active</div></div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>📊 Message Activity (Last 7 Days)</h3>
+          <div class="chart-bar-container" id="activityChart"></div>
+          <div class="chart-labels" id="chartLabels"></div>
         </div>
-        <nav class="sidebar-nav">
-            <div class="nav-section">Main</div>
-            <button class="nav-item active" data-page="dashboard">
-                <span class="icon">📊</span> Dashboard
-            </button>
-            <button class="nav-item" data-page="commands">
-                <span class="icon">⌨️</span> Commands
-                <span class="badge">12</span>
-            </button>
-            <button class="nav-item" data-page="scheduled">
-                <span class="icon">📅</span> Scheduled
-            </button>
-            <button class="nav-item" data-page="broadcast">
-                <span class="icon"></span> Broadcast
-            </button>
-
-            <div class="nav-section">Management</div>
-            <button class="nav-item" data-page="users">
-                <span class="icon">👥</span> Users
-                <span class="badge">1.2K</span>
-            </button>
-            <button class="nav-item" data-page="analytics">
-                <span class="icon">📈</span> Analytics
-            </button>
-            <button class="nav-item" data-page="groups">
-                <span class="icon">👨‍👩‍</span> Groups
-            </button>
-
-            <div class="nav-section">Developer</div>
-            <button class="nav-item" data-page="tools">
-                <span class="icon">🛠️</span> Tools
-            </button>
-            <button class="nav-item" data-page="settings">
-                <span class="icon">⚙️</span> Settings
-            </button>
-            <button class="nav-item" data-page="logs">
-                <span class="icon">📋</span> Logs
-            </button>
-        </nav>
-        <div class="sidebar-footer">
-            <div class="status-dot"></div>
-            <span class="status-text">Bot Online</span>
-            <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">v2.4.1</span>
+        <div class="chart-card">
+          <h3>🕐 Recent Activity</h3>
+          <div class="activity-list" id="activityList">
+            <div class="activity-item"><div class="activity-icon" style="background:var(--bg-tertiary)">…</div><div><div class="activity-text">Waiting for live events</div></div></div>
+          </div>
         </div>
-    </aside>
-
-    <!-- Main Content -->
-    <div class="main">
-        <!-- Topbar -->
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="hamburger" onclick="toggleSidebar()">☰</button>
-                <div>
-                    <h2 id="pageTitle">Dashboard</h2>
-                    <div class="breadcrumb" id="pageBreadcrumb">ATR_dailybot · Control Center</div>
-                </div>
-            </div>
-            <div class="topbar-right">
-                <button class="topbar-btn" onclick="showToast('Bot restarted successfully','success')">🔄
-                    Restart</button>
-                <button class="topbar-btn primary" onclick="openModal('commandModal')">+ New Command</button>
-            </div>
-        </header>
-
-        <div class="content">
-
-            <!-- DASHBOARD PAGE -->
-            <div class="page active" id="page-dashboard">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon blue">👥</div>
-                            <div class="stat-trend up">↑ 12%</div>
-                        </div>
-                        <div class="stat-value">1,247</div>
-                        <div class="stat-label">Total Users</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon green">📨</div>
-                            <div class="stat-trend up">↑ 8%</div>
-                        </div>
-                        <div class="stat-value">8,432</div>
-                        <div class="stat-label">Messages Today</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon orange">⏰</div>
-                            <div class="stat-trend up">↑ 3</div>
-                        </div>
-                        <div class="stat-value">6</div>
-                        <div class="stat-label">Active Schedules</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon purple">⌨️</div>
-                            <div class="stat-trend down">↓ 2</div>
-                        </div>
-                        <div class="stat-value">12</div>
-                        <div class="stat-label">Commands Active</div>
-                    </div>
-                </div>
-
-                <div class="charts-grid">
-                    <div class="chart-card">
-                        <h3>📊 Message Activity (Last 7 Days)</h3>
-                        <div class="chart-bar-container" id="activityChart"></div>
-                        <div class="chart-labels" id="chartLabels"></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>🕐 Recent Activity</h3>
-                        <div class="activity-list">
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:var(--green-bg)">📨</div>
-                                <div>
-                                    <div class="activity-text"><strong>Morning broadcast</strong> sent to 1,247 users
-                                    </div>
-                                    <div class="activity-time">2 min ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:rgba(88,166,255,0.15)">⌨️</div>
-                                <div>
-                                    <div class="activity-text"><strong>/dashboard</strong> command updated</div>
-                                    <div class="activity-time">15 min ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:var(--purple-bg)">👤</div>
-                                <div>
-                                    <div class="activity-text"><strong>+23 new users</strong> joined today</div>
-                                    <div class="activity-time">1 hour ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:var(--orange-bg)">⚠️</div>
-                                <div>
-                                    <div class="activity-text"><strong>Rate limit</strong> warning on /stats command
-                                    </div>
-                                    <div class="activity-time">3 hours ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:var(--green-bg)">🔄</div>
-                                <div>
-                                    <div class="activity-text"><strong>Bot restarted</strong> — all services online
-                                    </div>
-                                    <div class="activity-time">5 hours ago</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Commands Overview -->
-                <div class="table-card">
-                    <div class="table-header">
-                        <h3>⚡ Top Commands (Today)</h3>
-                        <button class="topbar-btn" onclick="navigateTo('commands')">View All →</button>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Command</th>
-                                <th>Usage</th>
-                                <th>Status</th>
-                                <th>Group</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><span class="cmd-name">/dashboard</span></td>
-                                <td>342 times</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>All</td>
-                            </tr>
-                            <tr>
-                                <td><span class="cmd-name">/daily</span></td>
-                                <td>289 times</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>Clients</td>
-                            </tr>
-                            <tr>
-                                <td><span class="cmd-name">/stats</span></td>
-                                <td>156 times</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>All</td>
-                            </tr>
-                            <tr>
-                                <td><span class="cmd-name">/help</span></td>
-                                <td>98 times</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>All</td>
-                            </tr>
-                            <tr>
-                                <td><span class="cmd-name">/schedule</span></td>
-                                <td>67 times</td>
-                                <td><span class="status-badge paused">● Paused</span></td>
-                                <td>Admins</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- COMMANDS PAGE -->
-            <div class="page" id="page-commands">
-                <div class="table-card">
-                    <div class="table-header">
-                        <h3>⌨️ All Commands (12)</h3>
-                        <div style="display:flex;gap:10px">
-                            <div class="search-box">
-                                <span>🔍</span>
-                                <input type="text" placeholder="Search commands..." id="cmdSearch"
-                                    oninput="filterCommands()">
-                            </div>
-                            <button class="topbar-btn primary" onclick="openModal('commandModal')">+ New</button>
-                        </div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Command</th>
-                                <th>Answer</th>
-                                <th>Aliases</th>
-                                <th>Group</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="commandsTable">
-                            <tr data-cmd="dashboard">
-                                <td><span class="cmd-name">/dashboard</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📊
-                                    **ATR_dailybot DASHBOARD**\n\nWelcome...</td>
-                                <td>/menu, /home</td>
-                                <td>All</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('dashboard')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="daily">
-                                <td><span class="cmd-name">/daily</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📅
-                                    Daily briefing with market updates...</td>
-                                <td>/today, /briefing</td>
-                                <td>Clients</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('daily')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="stats">
-                                <td><span class="cmd-name">/stats</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📈
-                                    Bot statistics and user metrics...</td>
-                                <td>/statistics, /metrics</td>
-                                <td>Admins</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('stats')">️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="help">
-                                <td><span class="cmd-name">/help</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    Help menu with all available commands...</td>
-                                <td>/support, /info</td>
-                                <td>All</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('help')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="schedule">
-                                <td><span class="cmd-name">/schedule</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📅
-                                    View and manage scheduled messages...</td>
-                                <td>/calendar, /planner</td>
-                                <td>Admins</td>
-                                <td><span class="status-badge paused">● Paused</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('schedule')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">▶</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="broadcast">
-                                <td><span class="cmd-name">/broadcast</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    Send message to all users...</td>
-                                <td>/send, /announce</td>
-                                <td>Admins</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('broadcast')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="users">
-                                <td><span class="cmd-name">/users</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    User management panel...</td>
-                                <td>/members, /list</td>
-                                <td>Admins</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('users')">️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="settings">
-                                <td><span class="cmd-name">/settings</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">️
-                                    Bot configuration panel...</td>
-                                <td>/config, /prefs</td>
-                                <td>Admins</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('settings')">️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="contacts">
-                                <td><span class="cmd-name">/contacts</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    Contact directory and support...</td>
-                                <td>/support, /reach</td>
-                                <td>Clients</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('contacts')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="reports">
-                                <td><span class="cmd-name">/reports</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    Generate and view reports...</td>
-                                <td>/report, /export</td>
-                                <td>Admins</td>
-                                <td><span class="status-badge disabled">● Disabled</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('reports')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">▶</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="feedback">
-                                <td><span class="cmd-name">/feedback</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    Submit feedback or suggestions...</td>
-                                <td>/suggest, /idea</td>
-                                <td>All</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('feedback')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-cmd="start">
-                                <td><span class="cmd-name">/start</span></td>
-                                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🚀
-                                    Welcome message for new users...</td>
-                                <td>/hello, /hi</td>
-                                <td>All</td>
-                                <td><span class="status-badge active">● Active</span></td>
-                                <td>
-                                    <div class="action-btns">
-                                        <button class="action-btn" onclick="editCommand('start')">✏️</button>
-                                        <button class="action-btn" onclick="toggleCmd(this)">⏸</button>
-                                        <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SCHEDULED PAGE -->
-            <div class="page" id="page-scheduled">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-                    <h3 style="font-size:18px;font-weight:700">📅 Scheduled Messages (6 Active)</h3>
-                    <button class="topbar-btn primary" onclick="openModal('scheduleModal')">+ New Schedule</button>
-                </div>
-                <div class="schedule-grid">
-                    <div class="schedule-card">
-                        <div class="time">06:00 AM</div>
-                        <div class="freq"> Daily · Every day</div>
-                        <div class="msg">🌅 <strong>Good Morning Briefing</strong><br>Daily market overview, top news,
-                            and investment insights for ATR clients.</div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <span class="users">👥 1,247 users</span>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div class="time">09:00 AM</div>
-                        <div class="freq">🔁 Weekdays · Mon-Fri</div>
-                        <div class="msg">📊 <strong>Market Open Alert</strong><br>Pre-market analysis, key levels to
-                            watch, and trading opportunities.</div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <span class="users">👥 892 users</span>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div class="time">12:00 PM</div>
-                        <div class="freq">🔁 Daily · Every day</div>
-                        <div class="msg">🍽️ <strong>Midday Update</strong><br>Portfolio performance check, midday
-                            market summary, and quick tips.</div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <span class="users">👥 1,103 users</span>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div class="time">03:00 PM</div>
-                        <div class="freq">🔁 Weekdays · Mon-Fri</div>
-                        <div class="msg">📈 <strong>Afternoon Analysis</strong><br>Technical analysis updates, sector
-                            performance, and outlook.</div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <span class="users">👥 756 users</span>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div class="time">06:00 PM</div>
-                        <div class="freq">🔁 Daily · Every day</div>
-                        <div class="msg">🌆 <strong>Evening Wrap-up</strong><br>Day's summary, closing prices, and
-                            tomorrow's preview.</div>
-                        <div class="meta">
-                            <span class="status-badge paused">● Paused</span>
-                            <span class="users">👥 1,247 users</span>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div class="time">09:00 PM</div>
-                        <div class="freq">🔁 Weekly · Sundays</div>
-                        <div class="msg"> <strong>Weekly Report</strong><br>Complete weekly performance report, wins,
-                            losses, and next week strategy.</div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <span class="users">👥 1,247 users</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- BROADCAST PAGE -->
-            <div class="page" id="page-broadcast">
-                <div class="broadcast-form">
-                    <h3>📢 Send Broadcast Message</h3>
-                    <div class="form-group">
-                        <label>Target Audience</label>
-                        <select id="broadcastTarget">
-                            <option>All Users (1,247)</option>
-                            <option>Clients Group (892)</option>
-                            <option>Admins Only (12)</option>
-                            <option>Active Users - Last 7 days (634)</option>
-                            <option>Inactive Users - 30+ days (213)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Message Content</label>
-                        <textarea id="broadcastMsg"
-                            placeholder="Type your broadcast message here... Supports Markdown formatting."
-                            oninput="updateCharCount()"></textarea>
-                        <div class="char-count"><span id="charCount">0</span> / 4096 characters</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Schedule (optional)</label>
-                            <input type="datetime-local" id="broadcastSchedule">
-                        </div>
-                        <div class="form-group">
-                            <label>Reply Markup</label>
-                            <select>
-                                <option>None</option>
-                                <option>Inline Keyboard</option>
-                                <option>Reply Keyboard</option>
-                                <option>Force Reply</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:10px;margin-top:8px">
-                        <button class="btn btn-primary" onclick="sendBroadcast()">📤 Send Now</button>
-                        <button class="btn btn-secondary" onclick="scheduleBroadcast()">📅 Schedule</button>
-                        <button class="btn btn-secondary" onclick="previewBroadcast()">👁️ Preview</button>
-                    </div>
-                </div>
-
-                <div class="table-card">
-                    <div class="table-header">
-                        <h3>📜 Broadcast History</h3>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Message</th>
-                                <th>Target</th>
-                                <th>Delivered</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Today, 6:00 AM</td>
-                                <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🌅
-                                    Good Morning Briefing - Market overview...</td>
-                                <td>All Users</td>
-                                <td>1,247/1,247</td>
-                                <td><span class="status-badge active">● Delivered</span></td>
-                            </tr>
-                            <tr>
-                                <td>Yesterday, 9:00 PM</td>
-                                <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📋
-                                    Weekly Report - Performance summary...</td>
-                                <td>All Users</td>
-                                <td>1,241/1,247</td>
-                                <td><span class="status-badge active">● Delivered</span></td>
-                            </tr>
-                            <tr>
-                                <td>Dec 18, 3:00 PM</td>
-                                <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🚨
-                                    Important: System maintenance notice...</td>
-                                <td>All Users</td>
-                                <td>1,247/1,247</td>
-                                <td><span class="status-badge active">● Delivered</span></td>
-                            </tr>
-                            <tr>
-                                <td>Dec 17, 12:00 PM</td>
-                                <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🎉
-                                    Holiday schedule update...</td>
-                                <td>Clients</td>
-                                <td>892/892</td>
-                                <td><span class="status-badge active">● Delivered</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- USERS PAGE -->
-            <div class="page" id="page-users">
-                <div class="table-card">
-                    <div class="table-header">
-                        <h3> User Management (1,247 total)</h3>
-                        <div style="display:flex;gap:10px">
-                            <div class="search-box">
-                                <span>🔍</span>
-                                <input type="text" placeholder="Search users...">
-                            </div>
-                            <button class="topbar-btn">📥 Export CSV</button>
-                        </div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Joined</th>
-                                <th>Messages</th>
-                                <th>Last Active</th>
-                                <th>Group</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-sm">DM</div>
-                                        <div>
-                                            <div class="name">Diana Mercer</div>
-                                            <div class="username">@diana_mercer</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Jan 15, 2024</td>
-                                <td>2,847</td>
-                                <td>2 min ago</td>
-                                <td><span class="status-badge active">Admin</span></td>
-                                <td>
-                                    <div class="action-btns"><button class="action-btn">️</button><button
-                                            class="action-btn">✏️</button></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-sm"
-                                            style="background:linear-gradient(135deg,var(--green),#059669)">JS</div>
-                                        <div>
-                                            <div class="name">James Smith</div>
-                                            <div class="username">@james_smith</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Mar 22, 2024</td>
-                                <td>1,523</td>
-                                <td>15 min ago</td>
-                                <td><span class="status-badge active">Client</span></td>
-                                <td>
-                                    <div class="action-btns"><button class="action-btn">👁️</button><button
-                                            class="action-btn">✏️</button></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-sm"
-                                            style="background:linear-gradient(135deg,var(--orange),#ea580c)">AK</div>
-                                        <div>
-                                            <div class="name">Aisha Khan</div>
-                                            <div class="username">@aisha_k</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Jun 8, 2024</td>
-                                <td>987</td>
-                                <td>1 hour ago</td>
-                                <td><span class="status-badge active">Client</span></td>
-                                <td>
-                                    <div class="action-btns"><button class="action-btn">👁️</button><button
-                                            class="action-btn">✏️</button></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-sm"
-                                            style="background:linear-gradient(135deg,var(--purple),#7c3aed)">RL</div>
-                                        <div>
-                                            <div class="name">Robert Lee</div>
-                                            <div class="username">@rob_lee</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Aug 14, 2024</td>
-                                <td>654</td>
-                                <td>3 hours ago</td>
-                                <td><span class="status-badge active">Client</span></td>
-                                <td>
-                                    <div class="action-btns"><button class="action-btn">👁️</button><button
-                                            class="action-btn">✏️</button></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-sm"
-                                            style="background:linear-gradient(135deg,var(--red),#dc2626)">MP</div>
-                                        <div>
-                                            <div class="name">Maria Perez</div>
-                                            <div class="username">@maria_p</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Oct 3, 2024</td>
-                                <td>312</td>
-                                <td>1 day ago</td>
-                                <td><span class="status-badge paused">Inactive</span></td>
-                                <td>
-                                    <div class="action-btns"><button class="action-btn">👁️</button><button
-                                            class="action-btn">✏️</button></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-sm"
-                                            style="background:linear-gradient(135deg,#64748b,#475569)">TW</div>
-                                        <div>
-                                            <div class="name">Tom Wilson</div>
-                                            <div class="username">@tom_w</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Nov 20, 2024</td>
-                                <td>89</td>
-                                <td>5 days ago</td>
-                                <td><span class="status-badge disabled">Blocked</span></td>
-                                <td>
-                                    <div class="action-btns"><button class="action-btn">👁️</button><button
-                                            class="action-btn danger"></button></div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ANALYTICS PAGE -->
-            <div class="page" id="page-analytics">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon blue">📨</div>
-                            <div class="stat-trend up">↑ 23%</div>
-                        </div>
-                        <div class="stat-value">58.4K</div>
-                        <div class="stat-label">Total Messages (30d)</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon green">👥</div>
-                            <div class="stat-trend up">↑ 18%</div>
-                        </div>
-                        <div class="stat-value">+342</div>
-                        <div class="stat-label">New Users (30d)</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon orange">⏱️</div>
-                            <div class="stat-trend up">↑ 5%</div>
-                        </div>
-                        <div class="stat-value">4.2m</div>
-                        <div class="stat-label">Avg Response Time</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-icon purple">📊</div>
-                            <div class="stat-trend down">↓ 2%</div>
-                        </div>
-                        <div class="stat-value">94.7%</div>
-                        <div class="stat-label">Uptime</div>
-                    </div>
-                </div>
-                <div class="charts-grid">
-                    <div class="chart-card">
-                        <h3>📈 User Growth (Last 30 Days)</h3>
-                        <div class="chart-bar-container" id="growthChart"></div>
-                        <div class="chart-labels" id="growthLabels"></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>🏆 Top Commands</h3>
-                        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
-                            <div>
-                                <div
-                                    style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-                                    <span>/dashboard</span><span style="color:var(--accent);font-weight:700">34%</span>
-                                </div>
-                                <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden">
-                                    <div style="width:34%;height:100%;background:var(--accent);border-radius:4px"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div
-                                    style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-                                    <span>/daily</span><span style="color:var(--green);font-weight:700">28%</span>
-                                </div>
-                                <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden">
-                                    <div style="width:28%;height:100%;background:var(--green);border-radius:4px"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div
-                                    style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-                                    <span>/stats</span><span style="color:var(--orange);font-weight:700">18%</span>
-                                </div>
-                                <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden">
-                                    <div style="width:18%;height:100%;background:var(--orange);border-radius:4px"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div
-                                    style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-                                    <span>/help</span><span style="color:var(--purple);font-weight:700">12%</span>
-                                </div>
-                                <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden">
-                                    <div style="width:12%;height:100%;background:var(--purple);border-radius:4px"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div
-                                    style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-                                    <span>Others</span><span style="color:var(--text-muted);font-weight:700">8%</span>
-                                </div>
-                                <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden">
-                                    <div style="width:8%;height:100%;background:var(--text-muted);border-radius:4px">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- GROUPS PAGE -->
-            <div class="page" id="page-groups">
-                <div class="schedule-grid">
-                    <div class="schedule-card">
-                        <div style="font-size:24px;margin-bottom:8px">👥</div>
-                        <div class="time" style="font-size:18px">Clients</div>
-                        <div class="freq">892 members · Primary group</div>
-                        <div class="msg">Main client communication group. Receives daily briefings, market updates, and
-                            investment alerts.</div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <button class="action-btn" style="margin-left:auto">⚙️ Manage</button>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div style="font-size:24px;margin-bottom:8px">🔒</div>
-                        <div class="time" style="font-size:18px">Admins</div>
-                        <div class="freq">12 members · Restricted</div>
-                        <div class="msg">Administrative group for bot management, command editing, and system alerts.
-                        </div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <button class="action-btn" style="margin-left:auto">⚙️ Manage</button>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div style="font-size:24px;margin-bottom:8px">📢</div>
-                        <div class="time" style="font-size:18px">Announcements</div>
-                        <div class="freq">1,247 members · Broadcast only</div>
-                        <div class="msg">Read-only channel for important announcements and system updates.</div>
-                        <div class="meta">
-                            <span class="status-badge active">● Active</span>
-                            <button class="action-btn" style="margin-left:auto">⚙️ Manage</button>
-                        </div>
-                    </div>
-                    <div class="schedule-card">
-                        <div style="font-size:24px;margin-bottom:8px">🆕</div>
-                        <div class="time" style="font-size:18px">New Users</div>
-                        <div class="freq">213 members · Onboarding</div>
-                        <div class="msg">Welcome group for new users. Automated onboarding sequence and introductory
-                            content.</div>
-                        <div class="meta">
-                            <span class="status-badge paused">● Paused</span>
-                            <button class="action-btn" style="margin-left:auto">⚙️ Manage</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TOOLS PAGE -->
-            <div class="page" id="page-tools">
-                <h3 style="font-size:18px;font-weight:700;margin-bottom:20px">🛠️ Developer Tools</h3>
-                <div class="tools-grid">
-                    <div class="tool-card" onclick="openModal('importModal')">
-                        <div class="tool-icon" style="background:rgba(88,166,255,0.15)">📤</div>
-                        <h4>Upload Commands</h4>
-                        <p>Import commands from Google Sheets or CSV file. Bulk update all bot commands at once.</p>
-                    </div>
-                    <div class="tool-card" onclick="openModal('backupModal')">
-                        <div class="tool-icon" style="background:var(--green-bg)">📋</div>
-                        <h4>Make Bot Copy</h4>
-                        <p>Create a backup or duplicate your bot. Export all commands, settings, and user data.</p>
-                    </div>
-                    <div class="tool-card" onclick="openModal('gitModal')">
-                        <div class="tool-icon" style="background:var(--purple-bg)">🔄</div>
-                        <h4>Git Sync</h4>
-                        <p>Connect your bot with a Git repository. Version control for all bot configurations.</p>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon" style="background:var(--orange-bg)">🧪</div>
-                        <h4>Test Mode</h4>
-                        <p>Enable test mode to try commands without affecting live users. Sandbox environment.</p>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon" style="background:var(--red-bg)">🔌</div>
-                        <h4>Webhooks</h4>
-                        <p>Configure webhook URLs for external integrations. Real-time event notifications.</p>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon" style="background:rgba(57,210,192,0.15)">📊</div>
-                        <h4>API Access</h4>
-                        <p>Generate API keys for external applications. RESTful access to bot data and commands.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SETTINGS PAGE -->
-            <div class="page" id="page-settings">
-                <div class="settings-section">
-                    <h3>🤖 Bot Configuration</h3>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Bot Token</div>
-                            <div class="setting-desc">Telegram Bot API token</div>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:10px">
-                            <code
-                                style="font-size:12px;color:var(--text-muted);background:var(--bg-tertiary);padding:6px 12px;border-radius:6px">7***...***42</code>
-                            <button class="action-btn">️</button>
-                        </div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Bot Username</div>
-                            <div class="setting-desc">Public bot username</div>
-                        </div>
-                        <code style="font-size:13px;color:var(--accent)">@ATR_dailybot</code>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Default Language</div>
-                            <div class="setting-desc">Primary language for bot responses</div>
-                        </div>
-                        <select
-                            style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 12px;border-radius:6px;font-size:13px">
-                            <option>English</option>
-                            <option>Spanish</option>
-                            <option>French</option>
-                            <option>Arabic</option>
-                        </select>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Parse Mode</div>
-                            <div class="setting-desc">Message formatting mode</div>
-                        </div>
-                        <select
-                            style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 12px;border-radius:6px;font-size:13px">
-                            <option>Markdown</option>
-                            <option>HTML</option>
-                            <option>Plain Text</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>⚙️ Behavior Settings</h3>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Auto-retry on failure</div>
-                            <div class="setting-desc">Retry failed message deliveries automatically</div>
-                        </div>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Auto-retry time</div>
-                            <div class="setting-desc">Seconds to wait before retrying</div>
-                        </div>
-                        <input type="number" value="600"
-                            style="width:80px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 12px;border-radius:6px;font-size:13px;text-align:center">
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Wait for answer</div>
-                            <div class="setting-desc">Bot waits for user response after command</div>
-                        </div>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Rate limiting</div>
-                            <div class="setting-desc">Limit commands per user per minute</div>
-                        </div>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Anti-spam protection</div>
-                            <div class="setting-desc">Block users sending too many messages</div>
-                        </div>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Log all commands</div>
-                            <div class="setting-desc">Record every command execution</div>
-                        </div>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>🔔 Notifications</h3>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Error alerts</div>
-                            <div class="setting-desc">Notify admin on bot errors</div>
-                        </div>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">Daily summary</div>
-                            <div class="setting-desc">Send daily usage summary to admin</div>
-                        </div>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-name">New user alerts</div>
-                            <div class="setting-desc">Notify when new users join</div>
-                        </div>
-                        <div class="toggle" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                </div>
-
-                <div style="display:flex;gap:10px;margin-top:20px">
-                    <button class="btn btn-primary" onclick="showToast('Settings saved successfully','success')">💾 Save
-                        Settings</button>
-                    <button class="btn btn-secondary" onclick="showToast('Settings reset to defaults','success')"> Reset
-                        Defaults</button>
-                </div>
-            </div>
-
-            <!-- LOGS PAGE -->
-            <div class="page" id="page-logs">
-                <div class="table-card">
-                    <div class="table-header">
-                        <h3>📋 System Logs</h3>
-                        <div style="display:flex;gap:10px">
-                            <select
-                                style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:8px 12px;border-radius:8px;font-size:13px">
-                                <option>All Levels</option>
-                                <option>Info</option>
-                                <option>Warning</option>
-                                <option>Error</option>
-                            </select>
-                            <button class="topbar-btn">🗑 Clear</button>
-                            <button class="topbar-btn">📥 Export</button>
-                        </div>
-                    </div>
-                    <div style="padding:16px;font-family:'Courier New',monospace;font-size:12px;line-height:2;max-height:500px;overflow-y:auto"
-                        id="logContainer">
-                        <div><span style="color:var(--text-muted)">[2024-12-20 06:00:01]</span> <span
-                                style="color:var(--green)">INFO</span> Morning broadcast sent to 1,247 users</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 05:59:58]</span> <span
-                                style="color:var(--green)">INFO</span> Scheduled task executed: daily_briefing</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 05:30:12]</span> <span
-                                style="color:var(--accent)">INFO</span> User @james_smith executed /dashboard</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 05:15:44]</span> <span
-                                style="color:var(--orange)">WARN</span> Rate limit approaching for /stats command
-                            (89/100)</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 04:22:01]</span> <span
-                                style="color:var(--green)">INFO</span> New user registered: @sarah_j (ID: 8847291)</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 03:45:33]</span> <span
-                                style="color:var(--red)">ERROR</span> Failed to deliver message to user ID 7729184 —
-                            user blocked bot</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 03:00:00]</span> <span
-                                style="color:var(--green)">INFO</span> Evening wrap-up broadcast sent to 1,241 users (6
-                            failed)</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 02:15:22]</span> <span
-                                style="color:var(--accent)">INFO</span> Command /schedule updated by @diana_mercer</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 01:00:05]</span> <span
-                                style="color:var(--green)">INFO</span> Database backup completed successfully (2.4MB)
-                        </div>
-                        <div><span style="color:var(--text-muted)">[2024-12-20 00:00:01]</span> <span
-                                style="color:var(--green)">INFO</span> Daily stats reset. New day started.</div>
-                        <div><span style="color:var(--text-muted)">[2024-12-19 23:45:12]</span> <span
-                                style="color:var(--orange)">WARN</span> High memory usage detected: 78% (threshold: 80%)
-                        </div>
-                        <div><span style="color:var(--text-muted)">[2024-12-19 22:30:00]</span> <span
-                                style="color:var(--green)">INFO</span> Bot health check passed. All systems operational.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+      </div>
     </div>
 
-    <!-- COMMAND EDIT MODAL -->
-    <div class="modal-overlay" id="commandModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Edit Command Metadata</h3>
-                <button class="modal-close" onclick="closeModal('commandModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Command</label>
-                    <input type="text" id="cmdCommand" value="/dashboard" placeholder="/command">
-                </div>
-                <div class="form-group">
-                    <label>Answer</label>
-                    <textarea id="cmdAnswer" placeholder="Bot response text (supports Markdown)">var message = {
-  text: "📊 **ATR_dailybot DASHBOARD**\n\nWelcome to the control center. Select an option:",
-  reply_markup: {
-    inline_keyboard: [
-      [{ text: "📅 Scheduled Messages", callback_data: "scheduled_messages" }],
-      [{ text: "📊 Bot Statistics", callback_data: "bot_stats" }],
-      [{ text: "📢 Broadcast", callback_data: "broadcast" }]
-    ]
-  }
-};</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Aliases</label>
-                    <input type="text" id="cmdAliases" placeholder="command's aliases. E.g: hi,hello" value="menu,home">
-                    <div class="hint">Comma-separated alternative command names</div>
-                </div>
-                <div class="form-group">
-                    <label>Help</label>
-                    <input type="text" id="cmdHelp" placeholder="help for command"
-                        value="Open the main dashboard with quick access to all features">
-                </div>
-                <div class="form-group">
-                    <label>Keyboard</label>
-                    <input type="text" id="cmdKeyboard" placeholder="Contacts, Help" value="Dashboard, Schedule, Stats">
-                </div>
-                <div class="form-group">
-                    <label>Allowed only for group</label>
-                    <input type="text" id="cmdGroup" placeholder="Group name" value="All">
-                </div>
-                <div class="toggle-row">
-                    <span class="label">Wait for answer</span>
-                    <div class="toggle on" id="cmdWaitToggle" onclick="this.classList.toggle('on')"></div>
-                </div>
-                <div class="form-group">
-                    <label>Auto retry time in seconds</label>
-                    <input type="number" id="cmdRetry" value="600">
-                </div>
-                <div class="code-preview" id="cmdPreview"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('commandModal')">Cancel</button>
-                <button class="btn btn-danger"
-                    onclick="closeModal('commandModal');showToast('Command deleted','error')">Delete</button>
-                <button class="btn btn-primary" onclick="saveCommand()">💾 Save</button>
-            </div>
+    <div class="page" id="page-commands">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>⌨️ All Commands</h3>
+          <div style="display:flex;gap:10px">
+            <div class="search-box"><span>🔍</span><input type="text" placeholder="Search commands..." id="cmdSearch" oninput="filterCommands()"></div>
+            <button class="topbar-btn primary" onclick="openNewCommandModal()">+ New</button>
+          </div>
         </div>
+        <table>
+          <thead><tr><th>Command</th><th>Answer</th><th>Aliases</th><th>Group</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="commandsTable"><tr><td colspan="6" style="text-align:center;color:var(--text-muted)">Loading…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- SCHEDULE MODAL -->
-    <div class="modal-overlay" id="scheduleModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>New Scheduled Message</h3>
-                <button class="modal-close" onclick="closeModal('scheduleModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Time</label>
-                        <input type="time" value="08:00">
-                    </div>
-                    <div class="form-group">
-                        <label>Frequency</label>
-                        <select>
-                            <option>Daily</option>
-                            <option>Weekdays</option>
-                            <option>Weekly</option>
-                            <option>Custom</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Target Group</label>
-                    <select>
-                        <option>All Users</option>
-                        <option>Clients</option>
-                        <option>Admins</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Message</label>
-                    <textarea placeholder="Message content..."></textarea>
-                </div>
-                <div class="toggle-row">
-                    <span class="label">Enable immediately</span>
-                    <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('scheduleModal')">Cancel</button>
-                <button class="btn btn-primary"
-                    onclick="closeModal('scheduleModal');showToast('Schedule created','success')">Create
-                    Schedule</button>
-            </div>
-        </div>
+    <div class="page" id="page-scheduled">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:18px;font-weight:700">📅 Scheduled Messages</h3>
+        <button class="topbar-btn primary" onclick="openModal('scheduleModal')">+ New Schedule</button>
+      </div>
+      <div class="schedule-grid" id="scheduleGrid">
+        <div style="color:var(--text-muted)">Loading…</div>
+      </div>
     </div>
 
-    <!-- IMPORT MODAL -->
-    <div class="modal-overlay" id="importModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Upload Commands</h3>
-                <button class="modal-close" onclick="closeModal('importModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px">Import commands from Google
-                    Sheets or CSV file.</p>
-                <div class="form-group">
-                    <label>CSV URL</label>
-                    <input type="url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
-                </div>
-                <div style="border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color 0.2s"
-                    onmouseover="this.style.borderColor='var(--accent)'"
-                    onmouseout="this.style.borderColor='var(--border)'"
-                    onclick="showToast('File picker opened','success')">
-                    <div style="font-size:32px;margin-bottom:8px">📁</div>
-                    <div style="font-size:14px;font-weight:600;margin-bottom:4px">Drop CSV file here or click to browse
-                    </div>
-                    <div style="font-size:12px;color:var(--text-muted)">Supports .csv, .xlsx, .json</div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('importModal')">Cancel</button>
-                <button class="btn btn-primary"
-                    onclick="closeModal('importModal');showToast('Commands imported successfully','success')">📤 Upload
-                    Commands</button>
-            </div>
+    <div class="page" id="page-broadcast">
+      <div class="broadcast-form">
+        <h3>📢 Send Broadcast Message</h3>
+        <div class="form-group">
+          <label>Target Audience</label>
+          <select id="broadcastTarget">
+            <option value="All">All Users</option>
+            <option value="Clients">Clients Group</option>
+            <option value="Admins">Admins Only</option>
+          </select>
         </div>
+        <div class="form-group">
+          <label>Message Content</label>
+          <textarea id="broadcastMsg" placeholder="Type your broadcast message here... Supports Markdown formatting." oninput="updateCharCount()"></textarea>
+          <div class="char-count"><span id="charCount">0</span> / 4096 characters</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn btn-primary" onclick="sendBroadcast()">📤 Send Now</button>
+          <button class="btn btn-secondary" onclick="previewBroadcast()">👁️ Preview</button>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>📜 Broadcast History</h3></div>
+        <table>
+          <thead><tr><th>Date</th><th>Message</th><th>Target</th><th>Delivered</th><th>Status</th></tr></thead>
+          <tbody id="broadcastHistoryTable"><tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Loading…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- BACKUP MODAL -->
-    <div class="modal-overlay" id="backupModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Make Bot Copy</h3>
-                <button class="modal-close" onclick="closeModal('backupModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px">Create a backup or duplicate
-                    your bot configuration.</p>
-                <div class="form-group">
-                    <label>Backup Name</label>
-                    <input type="text" value="ATR_dailybot_backup_2024-12-20">
-                </div>
-                <div class="form-group">
-                    <label>Include</label>
-                    <div style="display:flex;flex-direction:column;gap:8px">
-                        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
-                                type="checkbox" checked> All Commands</label>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
-                                type="checkbox" checked> User Data</label>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
-                                type="checkbox" checked> Scheduled Messages</label>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
-                                type="checkbox" checked> Settings & Config</label>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
-                                type="checkbox"> Chat History</label>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('backupModal')">Cancel</button>
-                <button class="btn btn-primary"
-                    onclick="closeModal('backupModal');showToast('Backup created successfully','success')">📋 Make
-                    Copy</button>
-            </div>
+    <div class="page" id="page-users">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>User Management</h3>
+          <div class="search-box"><span>🔍</span><input type="text" id="userSearch" placeholder="Search users..." oninput="filterUsers()"></div>
         </div>
+        <table>
+          <thead><tr><th>User</th><th>Joined</th><th>Messages</th><th>Last Active</th><th>Status</th></tr></thead>
+          <tbody id="usersTable"><tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Loading…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- GIT MODAL -->
-    <div class="modal-overlay" id="gitModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Configure Git Sync</h3>
-                <button class="modal-close" onclick="closeModal('gitModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px">Connect your bot with a Git
-                    repository for version control.</p>
-                <div class="form-group">
-                    <label>Repository URL</label>
-                    <input type="url" placeholder="https://github.com/user/atr-dailybot.git">
-                </div>
-                <div class="form-group">
-                    <label>Branch</label>
-                    <input type="text" value="main">
-                </div>
-                <div class="form-group">
-                    <label>Access Token</label>
-                    <input type="password" placeholder="ghp_xxxxxxxxxxxx">
-                </div>
-                <div class="form-group">
-                    <label>Auto-sync</label>
-                    <div class="toggle-row" style="margin-top:8px">
-                        <span class="label">Push changes automatically</span>
-                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('gitModal')">Cancel</button>
-                <button class="btn btn-primary"
-                    onclick="closeModal('gitModal');showToast('Git connected successfully','success')">🔄 Configure
-                    Git</button>
-            </div>
+    <div class="page" id="page-analytics">
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>📈 User Growth</h3>
+          <div class="chart-bar-container" id="growthChart"></div>
+          <div class="chart-labels" id="growthLabels"></div>
         </div>
+        <div class="chart-card">
+          <h3>🏆 Top Commands</h3>
+          <div id="topCommandsBars" style="display:flex;flex-direction:column;gap:12px;margin-top:8px;color:var(--text-muted)">Loading…</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
+    <div class="page" id="page-groups">
+      <div class="schedule-grid" id="groupsGrid"><div style="color:var(--text-muted)">Loading…</div></div>
+    </div>
 
-    <script>
-        // Navigation
-        const navItems = document.querySelectorAll('.nav-item');
-        const pages = document.querySelectorAll('.page');
-        const pageTitle = document.getElementById('pageTitle');
-        const pageBreadcrumb = document.getElementById('pageBreadcrumb');
+    <div class="page" id="page-tools">
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:20px">🛠️ Developer Tools</h3>
+      <div class="tools-grid">
+        <div class="tool-card" onclick="openModal('importModal')"><div class="tool-icon" style="background:rgba(88,166,255,0.15)">📤</div><h4>Upload Commands</h4><p>Import commands from CSV file.</p></div>
+        <div class="tool-card" onclick="showToast('Backups run automatically on Render volume snapshots','success')"><div class="tool-icon" style="background:var(--green-bg)">📋</div><h4>Backup Status</h4><p>View last MongoDB backup.</p></div>
+      </div>
+    </div>
 
-        const pageTitles = {
-            dashboard: ['Dashboard', 'ATR_dailybot · Control Center'],
-            commands: ['Commands', 'ATR_dailybot · Command Management'],
-            scheduled: ['Scheduled Messages', 'ATR_dailybot · Message Scheduling'],
-            broadcast: ['Broadcast', 'ATR_dailybot · Message Broadcasting'],
-            users: ['Users', 'ATR_dailybot · User Management'],
-            analytics: ['Analytics', 'ATR_dailybot · Performance Analytics'],
-            groups: ['Groups', 'ATR_dailybot · Group Management'],
-            tools: ['Tools', 'ATR_dailybot · Developer Tools'],
-            settings: ['Settings', 'ATR_dailybot · Configuration'],
-            logs: ['Logs', 'ATR_dailybot · System Logs']
-        };
+    <div class="page" id="page-settings">
+      <div class="settings-section">
+        <h3>🤖 Bot Configuration</h3>
+        <div class="setting-row"><div class="setting-info"><div class="setting-name">Bot Username</div></div><code style="color:var(--accent)">@ATR_dailybot</code></div>
+      </div>
+    </div>
 
-        function navigateTo(pageId) {
-            navItems.forEach(n => n.classList.remove('active'));
-            pages.forEach(p => p.classList.remove('active'));
-            document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
-            document.getElementById(`page-${pageId}`).classList.add('active');
-            const [title, breadcrumb] = pageTitles[pageId] || [pageId, 'ATR_dailybot'];
-            pageTitle.textContent = title;
-            pageBreadcrumb.textContent = breadcrumb;
-            // Close sidebar on mobile
-            document.getElementById('sidebar').classList.remove('open');
-        }
+    <div class="page" id="page-logs">
+      <div class="table-card">
+        <div class="table-header"><h3>📋 System Logs</h3></div>
+        <div style="padding:16px;font-family:'Courier New',monospace;font-size:12px;line-height:2;max-height:500px;overflow-y:auto" id="logContainer">Loading…</div>
+      </div>
+    </div>
 
-        navItems.forEach(item => {
-            item.addEventListener('click', () => navigateTo(item.dataset.page));
-        });
+  </div>
+</div>
 
-        // Sidebar toggle
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
+<div class="modal-overlay" id="commandModal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="cmdModalTitle">Edit Command</h3><button class="modal-close" onclick="closeModal('commandModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="cmdId">
+      <div class="form-group"><label>Command</label><input type="text" id="cmdCommand" placeholder="/command"></div>
+      <div class="form-group"><label>Answer</label><textarea id="cmdAnswer" placeholder="Bot response text"></textarea></div>
+      <div class="form-group"><label>Aliases</label><input type="text" id="cmdAliases" placeholder="menu, home"><div class="hint">Comma-separated</div></div>
+      <div class="form-group"><label>Group</label><input type="text" id="cmdGroup" value="All"></div>
+      <div class="toggle-row"><span class="label">Wait for answer</span><div class="toggle" id="cmdWaitToggle" onclick="this.classList.toggle('on')"></div></div>
+      <div class="form-group"><label>Auto retry (seconds)</label><input type="number" id="cmdRetry" value="600"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('commandModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCommand()">💾 Save</button>
+    </div>
+  </div>
+</div>
 
-        // Modal
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
-            if (id === 'commandModal') updatePreview();
-        }
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
+<div class="modal-overlay" id="scheduleModal">
+  <div class="modal">
+    <div class="modal-header"><h3>New Scheduled Message</h3><button class="modal-close" onclick="closeModal('scheduleModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Cron expression</label><input type="text" id="schedCron" placeholder="0 6 * * *"></div>
+        <div class="form-group"><label>Target Group</label><select id="schedTarget"><option>All</option><option>Clients</option><option>Admins</option></select></div>
+      </div>
+      <div class="form-group"><label>Message</label><textarea id="schedMsg" placeholder="Message content..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('scheduleModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createSchedule()">Create Schedule</button>
+    </div>
+  </div>
+</div>
 
-        // Close modal on overlay click
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) overlay.classList.remove('active');
-            });
-        });
+<div class="toast" id="toast"></div>
 
-        // Toast
-        function showToast(msg, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + msg;
-            toast.className = 'toast show ' + type;
-            clearTimeout(window._toastTimer);
-            window._toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
-        }
+<script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+<script>
+/* ============ CONFIG ============ */
+const API_BASE = 'https://YOUR-BACKEND.onrender.com'; // ← set your real Render URL, no trailing slash
+let socket = null;
 
-        // Command actions
-        function editCommand(cmd) {
-            document.getElementById('cmdCommand').value = '/' + cmd;
-            openModal('commandModal');
-        }
+/* ============ NAV / MODAL / TOAST (unchanged) ============ */
+const navItems = document.querySelectorAll('.nav-item');
+const pages = document.querySelectorAll('.page');
+const pageTitle = document.getElementById('pageTitle');
+const pageBreadcrumb = document.getElementById('pageBreadcrumb');
+const pageTitles = {
+  dashboard:['Dashboard','ATR_dailybot · Control Center'], commands:['Commands','ATR_dailybot · Command Management'],
+  scheduled:['Scheduled Messages','ATR_dailybot · Message Scheduling'], broadcast:['Broadcast','ATR_dailybot · Message Broadcasting'],
+  users:['Users','ATR_dailybot · User Management'], analytics:['Analytics','ATR_dailybot · Performance Analytics'],
+  groups:['Groups','ATR_dailybot · Group Management'], tools:['Tools','ATR_dailybot · Developer Tools'],
+  settings:['Settings','ATR_dailybot · Configuration'], logs:['Logs','ATR_dailybot · System Logs']
+};
+function navigateTo(pageId){
+  navItems.forEach(n=>n.classList.remove('active'));
+  pages.forEach(p=>p.classList.remove('active'));
+  document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+  document.getElementById(`page-${pageId}`).classList.add('active');
+  const [title,breadcrumb]=pageTitles[pageId]||[pageId,'ATR_dailybot'];
+  pageTitle.textContent=title; pageBreadcrumb.textContent=breadcrumb;
+  document.getElementById('sidebar').classList.remove('open');
+}
+navItems.forEach(item=>item.addEventListener('click',()=>navigateTo(item.dataset.page)));
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open')}
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active')}));
+function showToast(msg,type='success'){
+  const toast=document.getElementById('toast');
+  toast.textContent=(type==='success'?'✅ ':'⚠️ ')+msg;
+  toast.className='toast show '+type;
+  clearTimeout(window._toastTimer);
+  window._toastTimer=setTimeout(()=>toast.classList.remove('show'),3000);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active'))});
 
-        function toggleCmd(btn) {
-            const row = btn.closest('tr');
-            const badge = row.querySelector('.status-badge');
-            if (badge.classList.contains('active')) {
-                badge.className = 'status-badge paused';
-                badge.textContent = '● Paused';
-                btn.textContent = '▶';
-                showToast('Command paused', 'success');
-            } else if (badge.classList.contains('paused')) {
-                badge.className = 'status-badge active';
-                badge.textContent = '● Active';
-                btn.textContent = '⏸';
-                showToast('Command activated', 'success');
-            } else {
-                badge.className = 'status-badge active';
-                badge.textContent = '● Active';
-                btn.textContent = '⏸';
-                showToast('Command enabled', 'success');
-            }
-        }
+/* ============ API LAYER ============ */
+function authHeaders(){
+  const token=localStorage.getItem('token');
+  return {'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})};
+}
+async function api(path,options={}){
+  const res=await fetch(`${API_BASE}${path}`,{...options,headers:{...authHeaders(),...(options.headers||{})}});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||`API failed: ${res.status}`);
+  return data;
+}
 
-        function deleteCmd(btn) {
-            if (confirm('Are you sure you want to delete this command?')) {
-                btn.closest('tr').remove();
-                showToast('Command deleted', 'error');
-            }
-        }
+/* ============ SOCKET.IO ============ */
+function connectRealtime(){
+  socket=io(API_BASE,{transports:['websocket','polling'],auth:{token:localStorage.getItem('token')}});
+  socket.on('connect',()=>{
+    document.getElementById('statusDot').classList.remove('offline');
+    document.getElementById('statusText').textContent='Bot Online';
+    showToast('Real-time connection established','success');
+  });
+  socket.on('disconnect',()=>{
+    document.getElementById('statusDot').classList.add('offline');
+    document.getElementById('statusText').textContent='Disconnected';
+  });
+  socket.on('connect_error', err => console.error('Socket error:', err.message));
 
-        function saveCommand() {
-            closeModal('commandModal');
-            showToast('Command saved successfully', 'success');
-        }
+  socket.on('schedule:created', () => loadSchedules());
+  socket.on('schedule:updated', () => loadSchedules());
+  socket.on('schedule:deleted', () => loadSchedules());
+  socket.on('schedule:executed', d => { pushActivity(`📅 ${d.name}: ${d.sent} sent, ${d.failed} failed`); loadSchedules(); loadAnalytics(); });
+  socket.on('schedule:error', d => showToast(`Schedule failed: ${d.name}`, 'error'));
+  socket.on('command:executed', d => { pushActivity(`⌨️ ${d.user||'user'} executed ${d.command}`); loadCommands(); loadAnalytics(); });
+  socket.on('user:new', d => { pushActivity(`👤 New user: ${d.user||'unknown'}`); loadUsers(); loadAnalytics(); showToast('New Telegram user joined','success'); });
+  socket.on('broadcast:progress', d => showToast(`Broadcast: ${d.percent}% (${d.delivered}/${d.total})`, 'success'));
+  socket.on('broadcast:complete', d => { showToast(`Broadcast complete: ${d.delivered} delivered`, 'success'); loadBroadcastHistory(); });
+}
 
-        function filterCommands() {
-            const search = document.getElementById('cmdSearch').value.toLowerCase();
-            document.querySelectorAll('#commandsTable tr').forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(search) ? '' : 'none';
-            });
-        }
+function pushActivity(text){
+  const list=document.getElementById('activityList');
+  const item=document.createElement('div');
+  item.className='activity-item';
+  item.innerHTML=`<div class="activity-icon" style="background:var(--green-bg)">•</div><div><div class="activity-text">${text}</div><div class="activity-time">just now</div></div>`;
+  list.prepend(item);
+  while(list.children.length>8) list.removeChild(list.lastChild);
+}
 
-        // Broadcast
-        function updateCharCount() {
-            const count = document.getElementById('broadcastMsg').value.length;
-            document.getElementById('charCount').textContent = count;
-        }
+/* ============ DATA LOADERS ============ */
+async function loadCommands(){
+  try{
+    const {data}=await api('/api/commands');
+    document.getElementById('cmdBadge').textContent=data.length;
+    document.getElementById('totalCommands').textContent=data.filter(c=>c.status==='active').length;
+    const tbody=document.getElementById('commandsTable');
+    tbody.innerHTML = data.length ? data.map(c=>`
+      <tr data-cmd-id="${c._id}">
+        <td><span class="cmd-name">/${c.command}</span></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(c.answer||'').slice(0,60)}</td>
+        <td>${(c.aliases||[]).join(', ')}</td>
+        <td>${c.group}</td>
+        <td><span class="status-badge ${c.status}">● ${c.status}</span></td>
+        <td><div class="action-btns">
+          <button class="action-btn" onclick="editCommand('${c._id}')">✏️</button>
+          <button class="action-btn" onclick="toggleCmd(this)">${c.status==='active'?'⏸':'▶'}</button>
+          <button class="action-btn danger" onclick="deleteCmd(this)">🗑</button>
+        </div></td>
+      </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No commands yet</td></tr>`;
+  }catch(e){ console.error('loadCommands failed:', e.message); }
+}
 
-        function sendBroadcast() {
-            const msg = document.getElementById('broadcastMsg').value;
-            if (!msg.trim()) {
-                showToast('Please enter a message', 'error');
-                return;
-            }
-            showToast('Broadcast sent to 1,247 users', 'success');
-            document.getElementById('broadcastMsg').value = '';
-            updateCharCount();
-        }
+async function loadUsers(){
+  try{
+    const {data}=await api('/api/users');
+    document.getElementById('userBadge').textContent = data.length>999 ? (data.length/1000).toFixed(1)+'K' : data.length;
+    document.getElementById('totalUsers').textContent = data.length;
+    const tbody=document.getElementById('usersTable');
+    tbody.innerHTML = data.length ? data.map(u=>`
+      <tr>
+        <td><div class="user-info-cell"><div class="user-avatar-sm">${(u.firstName||u.username||'?')[0].toUpperCase()}</div><div><div class="name">${u.firstName||''} ${u.lastName||''}</div><div class="username">@${u.username||u.telegramId}</div></div></div></td>
+        <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '–'}</td>
+        <td>${u.messageCount||0}</td>
+        <td>${u.lastActive ? new Date(u.lastActive).toLocaleString() : '–'}</td>
+        <td><span class="status-badge ${u.blocked?'disabled':'active'}">${u.blocked?'Blocked':'Active'}</span></td>
+      </tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No users yet</td></tr>`;
+  }catch(e){ console.error('loadUsers failed:', e.message); }
+}
 
-        function scheduleBroadcast() {
-            const schedule = document.getElementById('broadcastSchedule').value;
-            if (!schedule) {
-                showToast('Please select a date/time', 'error');
-                return;
-            }
-            showToast('Broadcast scheduled', 'success');
-        }
+async function loadSchedules(){
+  try{
+    const {data}=await api('/api/schedules');
+    document.getElementById('activeSchedules').textContent = data.filter(s=>s.status==='active').length;
+    const grid=document.getElementById('scheduleGrid');
+    grid.innerHTML = data.length ? data.map(s=>`
+      <div class="schedule-card" data-sched-id="${s._id}">
+        <div class="time">${s.cron}</div>
+        <div class="freq">${s.name||''}</div>
+        <div class="msg">${(s.message||'').slice(0,120)}</div>
+        <div class="meta">
+          <span class="status-badge ${s.status}">● ${s.status}</span>
+          <button class="action-btn" onclick="deleteSchedule('${s._id}')">🗑 Delete</button>
+        </div>
+      </div>`).join('') : `<div style="color:var(--text-muted)">No schedules yet — create one</div>`;
+  }catch(e){ console.error('loadSchedules failed:', e.message); }
+}
 
-        function previewBroadcast() {
-            const msg = document.getElementById('broadcastMsg').value;
-            if (!msg.trim()) {
-                showToast('Please enter a message first', 'error');
-                return;
-            }
-            showToast('Preview: ' + msg.substring(0, 50) + '...', 'success');
-        }
+async function loadBroadcastHistory(){
+  try{
+    const {data}=await api('/api/broadcast/history').catch(()=>({data:[]}));
+    const tbody=document.getElementById('broadcastHistoryTable');
+    tbody.innerHTML = data.length ? data.map(b=>`
+      <tr>
+        <td>${new Date(b.sentAt||b.createdAt).toLocaleString()}</td>
+        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.message}</td>
+        <td>${b.targetGroup}</td>
+        <td>${b.delivered}/${b.totalUsers}</td>
+        <td><span class="status-badge ${b.status==='completed'?'active':'paused'}">● ${b.status}</span></td>
+      </tr>`).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No broadcasts yet</td></tr>`;
+  }catch(e){ console.error('loadBroadcastHistory failed:', e.message); }
+}
 
-        // Command preview
-        function updatePreview() {
-            const cmd = document.getElementById('cmdCommand').value;
-            const answer = document.getElementById('cmdAnswer').value;
-            const aliases = document.getElementById('cmdAliases').value;
-            const group = document.getElementById('cmdGroup').value;
-            const wait = document.getElementById('cmdWaitToggle').classList.contains('on');
-            const retry = document.getElementById('cmdRetry').value;
+async function loadAnalytics(){
+  try{
+    const {data}=await api('/api/analytics/overview');
+    document.getElementById('todayMessages').textContent = Number(data.todayMessages||0).toLocaleString();
+    if(data.weeklyActivity) generateChart('activityChart','chartLabels',data.weeklyActivity.values,data.weeklyActivity.labels);
+    if(data.userGrowth) generateChart('growthChart','growthLabels',data.userGrowth.values,data.userGrowth.labels);
+    if(data.topCommands){
+      const el=document.getElementById('topCommandsBars');
+      el.innerHTML = data.topCommands.map(c=>`
+        <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>/${c.command}</span><span style="color:var(--accent);font-weight:700">${c.percent}%</span></div>
+        <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden"><div style="width:${c.percent}%;height:100%;background:var(--accent);border-radius:4px"></div></div></div>`).join('');
+    }
+  }catch(e){ console.error('loadAnalytics failed:', e.message); }
+}
 
-            const preview = `var message = {
-  command: "${cmd}",
-  text: \`${answer.substring(0, 200)}...\`,
-  aliases: [${aliases.split(',').map(a => `"${a.trim()}"`).join(', ')}],
-  group: "${group}",
-  wait_for_answer: ${wait},
-  auto_retry: ${retry}
-};`;
-            document.getElementById('cmdPreview').textContent = preview;
-        }
+async function loadLogs(){
+  try{
+    const {data}=await api('/api/logs').catch(()=>({data:[]}));
+    document.getElementById('logContainer').innerHTML = data.length ? data.map(l=>
+      `<div><span style="color:var(--text-muted)">[${new Date(l.createdAt).toLocaleString()}]</span> <span style="color:${l.level==='ERROR'?'var(--red)':l.level==='WARN'?'var(--orange)':'var(--green)'}">${l.level}</span> ${l.message}</div>`
+    ).join('') : 'No logs yet';
+  }catch(e){ console.error('loadLogs failed:', e.message); }
+}
 
-        // Update preview on input
-        ['cmdCommand', 'cmdAnswer', 'cmdAliases', 'cmdGroup', 'cmdRetry'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('input', updatePreview);
-        });
+function generateChart(containerId,labelsId,data,labels){
+  const container=document.getElementById(containerId);
+  const labelsContainer=document.getElementById(labelsId);
+  if(!container||!data||!data.length) return;
+  const max=Math.max(...data,1);
+  container.innerHTML=''; labelsContainer.innerHTML='';
+  data.forEach((val,i)=>{
+    const bar=document.createElement('div');
+    bar.className='chart-bar';
+    bar.style.height=(val/max*100)+'%';
+    bar.innerHTML=`<div class="tooltip">${val.toLocaleString()}</div>`;
+    container.appendChild(bar);
+    const label=document.createElement('span');
+    label.textContent=labels[i]||'';
+    labelsContainer.appendChild(label);
+  });
+}
 
-        // Generate charts
-        function generateChart(containerId, labelsId, data, labels) {
-            const container = document.getElementById(containerId);
-            const labelsContainer = document.getElementById(labelsId);
-            if (!container) return;
+/* ============ COMMAND ACTIONS ============ */
+function openNewCommandModal(){
+  document.getElementById('cmdId').value='';
+  document.getElementById('cmdModalTitle').textContent='New Command';
+  ['cmdCommand','cmdAnswer','cmdAliases'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cmdGroup').value='All';
+  document.getElementById('cmdWaitToggle').classList.remove('on');
+  document.getElementById('cmdRetry').value=600;
+  openModal('commandModal');
+}
+async function editCommand(id){
+  try{
+    const {data}=await api(`/api/commands/${id}`);
+    document.getElementById('cmdId').value=data._id;
+    document.getElementById('cmdModalTitle').textContent='Edit Command';
+    document.getElementById('cmdCommand').value='/'+data.command;
+    document.getElementById('cmdAnswer').value=data.answer;
+    document.getElementById('cmdAliases').value=(data.aliases||[]).join(', ');
+    document.getElementById('cmdGroup').value=data.group;
+    document.getElementById('cmdWaitToggle').classList.toggle('on', !!data.waitAnswer);
+    document.getElementById('cmdRetry').value=data.autoRetry||600;
+    openModal('commandModal');
+  }catch(e){ showToast(e.message,'error'); }
+}
+async function saveCommand(){
+  const id=document.getElementById('cmdId').value;
+  const body={
+    command:document.getElementById('cmdCommand').value.replace(/^\//,''),
+    answer:document.getElementById('cmdAnswer').value,
+    aliases:document.getElementById('cmdAliases').value.split(',').map(s=>s.trim()).filter(Boolean),
+    group:document.getElementById('cmdGroup').value,
+    waitAnswer:document.getElementById('cmdWaitToggle').classList.contains('on'),
+    autoRetry:Number(document.getElementById('cmdRetry').value)
+  };
+  try{
+    if(id) await api(`/api/commands/${id}`, {method:'PUT', body:JSON.stringify(body)});
+    else await api('/api/commands', {method:'POST', body:JSON.stringify(body)});
+    closeModal('commandModal');
+    showToast('Command saved','success');
+    loadCommands();
+  }catch(e){ showToast(e.message,'error'); }
+}
+async function toggleCmd(btn){
+  const row=btn.closest('tr'); const id=row.dataset.cmdId;
+  try{
+    const {data}=await api(`/api/commands/${id}/toggle`, {method:'PATCH'});
+    const badge=row.querySelector('.status-badge');
+    badge.className=`status-badge ${data.status}`;
+    badge.textContent=`● ${data.status}`;
+    btn.textContent=data.status==='active'?'⏸':'▶';
+    showToast(`Command ${data.status}`,'success');
+  }catch(e){ showToast(e.message,'error'); }
+}
+async function deleteCmd(btn){
+  const row=btn.closest('tr'); const id=row.dataset.cmdId;
+  if(!confirm('Delete this command?')) return;
+  try{
+    await api(`/api/commands/${id}`, {method:'DELETE'});
+    row.remove();
+    showToast('Command deleted','success');
+  }catch(e){ showToast(e.message,'error'); }
+}
+function filterCommands(){
+  const search=document.getElementById('cmdSearch').value.toLowerCase();
+  document.querySelectorAll('#commandsTable tr').forEach(row=>{
+    row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
+  });
+}
+function filterUsers(){
+  const search=document.getElementById('userSearch').value.toLowerCase();
+  document.querySelectorAll('#usersTable tr').forEach(row=>{
+    row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
+  });
+}
 
-            const max = Math.max(...data);
-            container.innerHTML = '';
-            labelsContainer.innerHTML = '';
+/* ============ SCHEDULE ACTIONS ============ */
+async function createSchedule(){
+  const body={
+    name:'Schedule '+Date.now(),
+    cron:document.getElementById('schedCron').value,
+    targetGroup:document.getElementById('schedTarget').value,
+    message:document.getElementById('schedMsg').value,
+    status:'active'
+  };
+  try{
+    await api('/api/schedules', {method:'POST', body:JSON.stringify(body)});
+    closeModal('scheduleModal');
+    showToast('Schedule created','success');
+    loadSchedules();
+  }catch(e){ showToast(e.message,'error'); }
+}
+async function deleteSchedule(id){
+  if(!confirm('Delete this schedule?')) return;
+  try{
+    await api(`/api/schedules/${id}`, {method:'DELETE'});
+    showToast('Schedule deleted','success');
+    loadSchedules();
+  }catch(e){ showToast(e.message,'error'); }
+}
 
-            data.forEach((val, i) => {
-                const height = (val / max) * 100;
-                const bar = document.createElement('div');
-                bar.className = 'chart-bar';
-                bar.style.height = height + '%';
-                bar.innerHTML = `<div class="tooltip">${val.toLocaleString()}</div>`;
-                container.appendChild(bar);
+/* ============ BROADCAST ============ */
+function updateCharCount(){
+  document.getElementById('charCount').textContent = document.getElementById('broadcastMsg').value.length;
+}
+window.sendBroadcast = async function(){
+  const message=document.getElementById('broadcastMsg').value.trim();
+  const targetGroup=document.getElementById('broadcastTarget').value;
+  if(!message) return showToast('Please enter a message','error');
+  try{
+    showToast('Sending broadcast...','success');
+    await api('/api/broadcast', {method:'POST', body:JSON.stringify({message,targetGroup})});
+    document.getElementById('broadcastMsg').value='';
+    updateCharCount();
+  }catch(e){ showToast(`Broadcast failed: ${e.message}`,'error'); }
+};
+function previewBroadcast(){
+  const msg=document.getElementById('broadcastMsg').value;
+  if(!msg.trim()) return showToast('Please enter a message first','error');
+  showToast('Preview: '+msg.substring(0,50)+'...','success');
+}
 
-                const label = document.createElement('span');
-                label.textContent = labels[i];
-                labelsContainer.appendChild(label);
-            });
-        }
-
-        generateChart('activityChart', 'chartLabels',
-            [1200, 1800, 2400, 1900, 2800, 3200, 2100],
-            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        );
-
-        generateChart('growthChart', 'growthLabels',
-            [850, 920, 980, 1050, 1100, 1180, 1247],
-            ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'Now']
-        );
-
-        // Keyboard shortcut
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
-            }
-        });
-    </script>
+/* ============ INIT ============ */
+async function initializeLiveDashboard(){
+  connectRealtime();
+  await Promise.all([loadCommands(), loadUsers(), loadSchedules(), loadAnalytics(), loadBroadcastHistory(), loadLogs()]);
+}
+document.addEventListener('DOMContentLoaded', initializeLiveDashboard);
+</script>
 
 </body>
-
 </html>
