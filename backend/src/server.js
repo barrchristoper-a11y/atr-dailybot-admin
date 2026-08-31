@@ -13,7 +13,6 @@ const scheduleRoutes = require('./routes/schedules');
 const broadcastRoutes = require('./routes/broadcast');
 const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admin');
-const webhookRoutes = require('./routes/webhook');
 const logRoutes = require('./routes/logs');
 
 const { initTelegram } = require('./services/telegramService');
@@ -59,7 +58,6 @@ app.use('/api/users', userRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/broadcast', broadcastRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/webhook', webhookRoutes);
 app.use('/api/logs', logRoutes);
 
 io.on('connection', (socket) => {

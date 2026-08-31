@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Broadcast = require('../models/Broadcast');
 const Log = require('../models/Log');
-const { getBot } = require('./telegram.service');
+const { getBot } = require('./telegramService');
 
 async function sendBroadcast(message, targetGroup, io) {
     const bot = getBot();
